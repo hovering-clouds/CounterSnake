@@ -29,12 +29,12 @@
 
   [CM.para]
   depth = 2
-  width = 1000
-  #width = 80001
+  #width = 1000
+  width = 80001
 
   [CM.data]
   cnt_method = "InPacket"
-  data = "../data/t.bin"
+  data = "../data/data-100K.bin"
   format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
 
   [CM.test]
@@ -46,45 +46,40 @@
   width_cnt = [10, 7]
   no_hash = [3]
 
-[ACS] # Additive Counter Sharing
+[Brick] # Brick
   
-  [ACS.config]
-    sketch = ["CMH"]
+  [Brick.config]
+    sketch = ["CM"]
     data = "../data/data-100K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    get_method = "THET_METHOD"
-    iternum = 1
-    init_val = 0.01
-    step_val = 0.01
-    clip = 0
-    ratio = 4
-    K = 4
+    width_cnt = [8, 4, 4]
+    no_cnt = [64, 16, 4]
 
-  [ACS.CM]
-    [ACS.CM.para]
+  [Brick.CM]
+    [Brick.CM.para]
       depth = 2
       width = 80001
-    [ACS.CM.test]
+    [Brick.CM.test]
       update = ["RATE"]
       query = ["RATE", "ARE", "AAE", "RCD"]
   
-  [ACS.CMHEAP]
-    [ACS.CMHEAP.para]
+  [Brick.CMHEAP]
+    [Brick.CMHEAP.para]
       depth = 2
       width = 80001
       pre_thre = 100
-    [ACS.CMHEAP.data]
+    [Brick.CMHEAP.data]
       hx_method = "Percentile"
       threshold_heavy_hitter = 0.0009173226287898038
       #threshold_heavy_hitter = 0.0005
-    [ACS.CMHEAP.test]
+    [Brick.CMHEAP.test]
       update = ["RATE"]
       query = ["RATE", "ARE", "AAE", "RCD"]
       heavyhitter = ["TIME", "ARE", "PRC", "RCL", "RCD"]
 
-  [ACS.FlowRadar]
-    [ACS.FlowRadar.para]
+  [Brick.FlowRadar]
+    [Brick.FlowRadar.para]
       flow_filter_bit = 1000000
       flow_filter_hash = 50
       count_table_num = 500000
@@ -93,30 +88,30 @@
       #flow_filter_hash = 5
       #count_table_num = 5000
       #count_table_hash = 5
-    [ACS.FlowRadar.test]
+    [Brick.FlowRadar.test]
       update = ["RATE"]
       decode = ["TIME", "ARE", "AAE", "RATIO", "ACC", "PODF"]
       decode_podf = 0.01
 
-  [ACS.HP]
-    [ACS.HP.para]
+  [Brick.HP]
+    [Brick.HP.para]
       depth = 15
       width = 8222
-    [ACS.HP.data]
+    [Brick.HP.data]
       hx_method = "TopK"
       threshold_heavy_hitter = 100
-    [ACS.HP.test]
+    [Brick.HP.test]
       update = ["RATE"]
       heavyhitter = ["TIME", "ARE", "PRC", "RCL", "RCD"]
   
-  [ACS.DT]
-    [ACS.DT.para]
+  [Brick.DT]
+    [Brick.DT.para]
       num_hash = 2
       num_group = 2500
-    [ACS.DT.data]
+    [Brick.DT.data]
       hx_method = "Percentile"
       threshold_heavy_hitter = 0.0009173226287898038
-    [ACS.DT.test]
+    [Brick.DT.test]
       update = ["RATE"]
       query = ["RATE", "ARE", "AAE"]
       heavyhitter = ["TIME", "ARE", "PRC", "RCL", "RCD"]

@@ -102,10 +102,10 @@ endfunction(add_user_sketch)
 
 # Normal Sketch
 add_user_sketch(CM CMSketch)
-add_user_sketch(FR FlowRadar)
-add_user_sketch(HP HashPipe)
-add_user_sketch(DT Deltoid)
+#add_user_sketch(FR FlowRadar)
+#add_user_sketch(HP HashPipe)
+#add_user_sketch(DT Deltoid)
 
 # Additive Counter Sharing
-add_executable(ACS ${CMAKE_CURRENT_SOURCE_DIR}/src/AdditiveCS/TestAdditiveCS.cpp)
-target_link_libraries(ACS OmniTools)
+add_executable(Brick ${CMAKE_CURRENT_SOURCE_DIR}/src/Brick/TestBrick.cpp)
+target_link_libraries(Brick OmniTools)
