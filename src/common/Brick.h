@@ -190,6 +190,16 @@ public:
   size_t bsize() const;
 
   /**
+   * @brief Dump decoded counters to ostream
+   * 
+   */
+  void dumpCnt(std::ostream& os) const;
+  /**
+   * @brief Dump original counters to ostream
+   * 
+   */
+  void dumpOri(std::ostream& os) const;
+  /**
    * @brief Clear the counters
    * 
    */
@@ -337,6 +347,29 @@ public:
   size_t bsize() const;
 
   /**
+   * @brief Get the number of overflow buckets
+   * 
+   */
+  size_t getOfNum() const;
+  /**
+   * @brief Dump decoded counters to ostream
+   * 
+   */
+  void dumpCnt(std::ostream& os) const{
+    for (size_t i = 0; i < bNum; i++){
+      buckets[i].dumpCnt(os);
+    }
+  }
+  /**
+   * @brief Dump original counters to ostream
+   * 
+   */
+  void dumpOri(std::ostream& os) const{
+    for (size_t i = 0; i < bNum; i++){
+      buckets[i].dumpOri(os);
+    }
+  }
+  /**
    * @brief Clear the counters
    * 
    */
@@ -447,7 +480,17 @@ T Bucket<no_layer, T>::updateSegment(const int32_t layer, const size_t index, co
         cnt_array[layer+1][i] = cnt_array[layer+1][i-1];
       }
       cnt_array[layer+1][next_index].reset();
-      // 4. update next layer
+      // 4. Also need to move the status bits. So in hardware inplmentation, we can 
+      // consider putting status bits and counters together, so one shift is enough.
+      // However, this technique violates the hypothesis that status bits are in one word.
+      // Also, popcount operation needs that status bits are stored continiously.
+      if(layer+1<no_layer-1){
+        for(size_t i = no_cnt[layer+1]-1;i>next_index;--i){
+          status_bits[layer+1][i] = status_bits[layer+1][i-1];
+        }
+        status_bits[layer+1][next_index] = false;
+      }
+      // 5. update next layer
       T u_overflow = updateSegment(layer+1, next_index, c_overflow);
       return u_overflow << width_cnt[layer];
     }
@@ -566,6 +609,22 @@ size_t Bucket<no_layer, T>::bsize() const{
 }
 
 template <int32_t no_layer, typename T>
+void Bucket<no_layer, T>::dumpCnt(std::ostream& os) const{
+  for(auto i: decoded_cnt){
+    os << i << ' ';
+  }
+  os << std::endl;
+}
+
+template <int32_t no_layer, typename T>
+void Bucket<no_layer, T>::dumpOri(std::ostream& os) const{
+  for(auto i: original_cnt){
+    os << i << ' ';
+  }
+  os << std::endl;
+}
+
+template <int32_t no_layer, typename T>
 void Bucket<no_layer, T>::clear(){
   for (int32_t i = 0; i < no_layer; ++i) {
     cnt_array[i] = std::vector<Util::DynamicIntX<T>>(no_cnt[i], {width_cnt[i]});
@@ -597,16 +656,22 @@ void Brick<no_layer, T>::initBucket(
 }
 
 template <int32_t no_layer, typename T>
+size_t Brick<no_layer, T>::getOfNum() const{
+  size_t ofNum = 0;
+  for (size_t i = 0; i < bNum; i++){
+    ofNum+=buckets[i].isOverflow();
+  }
+  return ofNum;
+}
+
+template <int32_t no_layer, typename T>
 size_t Brick<no_layer, T>::bsize() const{
   size_t bytes = 0;
   for (size_t i = 0; i < bNum; i++){
     bytes+=buckets[i].bsize();
   }
   // count the number of overflow buckets to get the minimum bits needed for full_box index.
-  size_t ofNum = 0;
-  for (size_t i = 0; i < bNum; i++){
-    ofNum+=buckets[i].isOverflow();
-  }
+  size_t ofNum = getOfNum();
   double ofbits_d = log2(static_cast<double>(ofNum+1));
   size_t ofbits = static_cast<size_t>(ofbits_d);
   bytes += (bNum*ofbits+7)/8;

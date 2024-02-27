@@ -175,6 +175,23 @@ void TestBrick(){
   std::cout << "pass test_brick" << std::endl;
 }
 
+void TestBucketStress(){
+  int32_t cnt[] = {5, 2, 3, 4, 3, 5, 2, 21, 10, 3, 0, 0, 0, 1, 6, 466,
+                   0, 3, 1, 2, 0, 0, 1, 2, 0, 5, 5, 425, 1, 0, 6, 1,
+                   0, 0, 0, 2, 0, 0, 0, 5, 0, 5, 5, 29961, 1, 9, 0, 2,
+                   0, 10, 0, 1, 6, 0, 0, 8, 0, 6, 32, 4, 8, 1, 0, 0};
+  Bucket<3, int32_t> bkt({64,16,4},{8,4,4});
+  for (size_t i = 0; i < 64; i++) {
+    for (int32_t j = 0;j<cnt[i];++j)
+      bkt.update(i, 1);
+  }
+  bkt.decode();
+  for (size_t i = 0; i < 64; i++) {
+    VERIFY(bkt.query(i)==cnt[i]);
+    VERIFY(bkt.getCnt(i)==cnt[i]);    
+  }
+  std::cout << "pass test_bucket_stress" << std::endl;
+}
 
 /**
  * @brief other methods in utils
@@ -186,6 +203,7 @@ OMNISKETCH_DECLARE_TEST(BRICK) {
   TestBucketOverflow();
   TestBucketClear();
   TestBrick();
+  TestBucketStress();
 }
 /** @endcond */
 #undef TEST_BRICK
