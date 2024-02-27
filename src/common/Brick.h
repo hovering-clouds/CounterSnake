@@ -352,6 +352,13 @@ public:
    */
   size_t getOfNum() const;
   /**
+   * @brief Get cNum, the number of counters
+   * 
+   */
+  size_t getcNum() const{
+    return cNum;
+  }
+  /**
    * @brief Dump decoded counters to ostream
    * 
    */

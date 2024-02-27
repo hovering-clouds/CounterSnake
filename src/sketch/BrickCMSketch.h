@@ -107,7 +107,7 @@ template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 size_t BrickCMSketch<key_len, no_layer, T, hash_t>::size() const {
   return sizeof(*this)                // instance
          + sizeof(hash_t) * depth     // hashing class
-         + sizeof(T) * depth * width; // counter
+         + counter.bsize()*(width*depth)/counter.getcNum(); // counter
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
