@@ -1,5 +1,5 @@
 /**
- * @file ACS_CMSketch.h
+ * @file BrickCMSketch.h
  * @author hc (you@domain.com)
  * @brief Implementation of Count Min Sketch with ACS counters
  *
@@ -10,7 +10,7 @@
 
 #include "common/hash.h"
 #include <common/sketch.h>
-#include <common/ACScounter.h>
+#include <common/Brick.h>
 
 namespace OmniSketch::Sketch {
 /**
@@ -20,17 +20,17 @@ namespace OmniSketch::Sketch {
  * @tparam T        type of the counter
  * @tparam hash_t   hashing class
  */
-template <int32_t key_len, typename T, typename hash_t = Hash::AwareHash>
-class ACS_CMSketch : public SketchBase<key_len, T> {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
+class BrickCMSketch : public SketchBase<key_len, T> {
 private:
   int32_t depth;
   int32_t width;
   const int32_t offset;
   hash_t *hash_fns;
-  Counter::ACScounter<T>& counter;
+  Counter::Brick<no_layer, T>& counter;
 
-  ACS_CMSketch(const ACS_CMSketch &) = delete;
-  ACS_CMSketch(ACS_CMSketch &&) = delete;
+  BrickCMSketch(const BrickCMSketch &) = delete;
+  BrickCMSketch(BrickCMSketch &&) = delete;
 
 public:
   /**
@@ -38,12 +38,12 @@ public:
    * @param width_ should be prime number to reduce hash collision
    *
    */
-  ACS_CMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::ACScounter<T>& counter_);
+  BrickCMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::Brick<no_layer, T>& counter_);
   /**
    * @brief Release the pointer
    *
    */
-  ~ACS_CMSketch();
+  ~BrickCMSketch();
   /**
    * @brief Update a flowkey with certain value
    *
@@ -72,20 +72,20 @@ public:
 
 namespace OmniSketch::Sketch {
 
-template <int32_t key_len, typename T, typename hash_t>
-ACS_CMSketch<key_len, T, hash_t>::ACS_CMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::ACScounter<T> &counter_)
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+BrickCMSketch<key_len, no_layer, T, hash_t>::BrickCMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::Brick<no_layer, T>& counter_)
     : depth(depth_), width(Util::NextPrime(width_)), counter(counter_), offset(_offset){
   hash_fns = new hash_t[depth];
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-ACS_CMSketch<key_len, T, hash_t>::~ACS_CMSketch()
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+BrickCMSketch<key_len, no_layer, T, hash_t>::~BrickCMSketch()
 {
     delete[] hash_fns;
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-void ACS_CMSketch<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+void BrickCMSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                           T val) {
   for (int32_t i = 0; i < depth; ++i) {
     int32_t index = hash_fns[i](flowkey) % width + i*width + offset;
@@ -93,25 +93,25 @@ void ACS_CMSketch<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
   }
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-T ACS_CMSketch<key_len, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+T BrickCMSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
   T min_val = std::numeric_limits<T>::max();
   for (int32_t i = 0; i < depth; ++i) {
     int32_t index = hash_fns[i](flowkey) % width + i*width + offset;
-    min_val = std::min(min_val, counter.query(index));
+    min_val = std::min(min_val, counter.getOriCnt(index));
   }
   return min_val;
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-size_t ACS_CMSketch<key_len, T, hash_t>::size() const {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+size_t BrickCMSketch<key_len, no_layer, T, hash_t>::size() const {
   return sizeof(*this)                // instance
          + sizeof(hash_t) * depth     // hashing class
          + sizeof(T) * depth * width; // counter
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-size_t ACS_CMSketch<key_len, T, hash_t>::cntNum() const {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+size_t BrickCMSketch<key_len, no_layer, T, hash_t>::cntNum() const {
   return depth * width;
 }
 

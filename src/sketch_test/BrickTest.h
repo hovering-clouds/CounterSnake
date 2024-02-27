@@ -1,7 +1,7 @@
 /**
- * @file ACSTestBase.h
+ * @file BrickTestBase.h
  * @author hc (you@domain.com)
- * @brief ACS Test base class
+ * @brief Brick Test base class
  *
  * @copyright Copyright (c) 2023
  *
@@ -9,12 +9,12 @@
 #pragma once
 
 #include <common/test.h>
-#include <common/ACScounter.h>
+#include <common/Brick.h>
 
 namespace OmniSketch::Test {
 
-template <int32_t key_len, typename T>
-class ACSTestBase : public TestBase<key_len, T> {
+template <int32_t key_len, int32_t no_layer, typename T>
+class BrickTestBase : public TestBase<key_len, T> {
 
 public:
   
@@ -22,12 +22,12 @@ public:
   Data::CntMethod cnt_method;
   std::unique_ptr<Sketch::SketchBase<key_len, T>> ptr;
 
-  ACSTestBase(const std::string_view show_name, const std::string_view config_file,
+  BrickTestBase(const std::string_view show_name, const std::string_view config_file,
               const std::string_view test_path, Data::StreamData<key_len>& data_,
               Data::CntMethod method)
       :TestBase<key_len, T>(show_name, config_file, test_path), data(data_), cnt_method(method) {}
 
-  virtual void initPtr(int32_t counter_num, Counter::ACScounter<T>& counter, Util::ConfigParser& parser);
+  virtual void initPtr(int32_t counter_num, Counter::Brick<no_layer, T>& counter, Util::ConfigParser& parser);
   void doUpdate();
   int32_t getCntNum();
 
@@ -43,19 +43,20 @@ public:
 
 namespace OmniSketch::Test {
 
-template <int32_t key_len, typename T>
-int32_t ACSTestBase<key_len, T>::getCntNum(){
+template <int32_t key_len, int32_t no_layer, typename T>
+int32_t BrickTestBase<key_len, no_layer, T>::getCntNum(){
   return ptr->cntNum();
 }
 
-template <int32_t key_len, typename T>
-void ACSTestBase<key_len, T>::doUpdate(){
+template <int32_t key_len, int32_t no_layer, typename T>
+void BrickTestBase<key_len, no_layer, T>::doUpdate(){
   this->testUpdate(ptr, data.begin(), data.end(), cnt_method);
 }
 
-template <int32_t key_len, typename T>
-void ACSTestBase<key_len, T>::initPtr(int32_t counter_num, Counter::ACScounter<T>& counter, Util::ConfigParser& parser){
-  LOG(ERROR, "You should override ACSTestBase::initPtr() in subclass.");
+template <int32_t key_len, int32_t no_layer, typename T>
+void BrickTestBase<key_len, no_layer, T>::initPtr(
+    int32_t counter_num, Counter::Brick<no_layer, T>& counter, Util::ConfigParser& parser){
+  LOG(ERROR, "You should override BrickTestBase::initPtr() in subclass.");
   return;
 }
 
