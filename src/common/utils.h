@@ -343,6 +343,11 @@ public:
    *
    */
   T getVal() const { return counter; }
+  /**
+   * @brief Reset the counter to 0
+   * 
+   */
+  void reset() {counter=0;}
 };
 
 } // namespace OmniSketch::Util
