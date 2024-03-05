@@ -234,7 +234,8 @@ public:
 };
 
 /**
- * @brief Bucketized rank-indexed counter.
+ * @brief Bucketized rank-indexed counter. This class will take care of the random
+ * prmutation needed for multi-sketch use case.
  * 
  * @tparam T Inner counter type (which should be numerical types).
  */
@@ -260,6 +261,19 @@ class Brick {
    * 
    */
   size_t rsz;
+  /**
+   * @brief Seed used for random permutation. The formula is: true_idx = (original_idx*pseed)%cNum.
+   * Therefore, for inversibility, `pseed` needs to be coprime with `cNum`. Also, we need to spread
+   * the counters of each sketch evenly in the buckets, so `pseed` should be much greater than the number
+   * of sketch instances.
+   * 
+   */
+  size_t pseed;
+  /**
+   * @brief The inverse of `pseed` modula `cNum`
+   * 
+   */
+  size_t iseed;
   /**
    * @brief Buckets used to store the counters
    * 
@@ -308,10 +322,11 @@ public:
   /**
    * @brief Update a counter
    * 
-   * @param index Counter index
+   * @param ori_index Counter index
    * @param val Value to be added
    */
-  void update(size_t index, T val){
+  void update(size_t ori_index, T val){
+    size_t index = (ori_index*pseed)%cNum;
     size_t bktIdx = index/perBkt;
     size_t cIdx = index%perBkt;
     buckets.at(bktIdx).update(cIdx, val);
@@ -331,10 +346,11 @@ public:
   /**
    * @brief Query a counter online
    * 
-   * @param index Counter index
+   * @param ori_index Counter index
    * @return The counter value
    */
-  T query(size_t index){
+  T query(size_t ori_index){
+    size_t index = (ori_index*pseed)%cNum;
     size_t bktIdx = index/perBkt;
     size_t cIdx = index%perBkt;
     return buckets.at(bktIdx).query(cIdx);
@@ -342,10 +358,11 @@ public:
   /**
    * @brief Get the value of a counter offline. Should be used after decoding
    * 
-   * @param index Counter index
+   * @param ori_index Counter index
    * @return The counter value
    */
-  T getCnt(size_t index) const{
+  T getCnt(size_t ori_index) const{
+    size_t index = (ori_index*pseed)%cNum;
     size_t bktIdx = index/perBkt;
     size_t cIdx = index%perBkt;
     return buckets.at(bktIdx).getCnt(cIdx);
@@ -355,7 +372,8 @@ public:
    * @brief Get the value of the original counter, i.e. the ground truth.
    * 
    */
-  T getOriCnt(size_t index) const{
+  T getOriCnt(size_t ori_index) const{
+    size_t index = (ori_index*pseed)%cNum;
     size_t bktIdx = index/perBkt;
     size_t cIdx = index%perBkt;
     return buckets.at(bktIdx).getOriCnt(cIdx);
@@ -363,10 +381,11 @@ public:
   /**
    * @brief Get the reference of a decoded counter. Should be used after decoding
    * 
-   * @param index Counter index
+   * @param ori_index Counter index
    * @return T& The counter reference
    */
-  T& operator[](size_t index){
+  T& operator[](size_t ori_index){
+    size_t index = (ori_index*pseed)%cNum;
     size_t bktIdx = index/perBkt;
     size_t cIdx = index%perBkt;
     return buckets.at(bktIdx)[cIdx];
@@ -696,6 +715,15 @@ void Brick<no_layer, T>::initBucket(
   perBkt = no_cnt[0];
   bNum = (counter_num+perBkt-1)/perBkt;
   rsz = 0;
+  int32_t candidate = 31;
+  int32_t cNum32 = static_cast<int32_t>(cNum);
+  while(true){
+    if(Util::IsCoprime(candidate, cNum32)){
+      pseed = static_cast<size_t>(candidate);
+      iseed = static_cast<size_t>(Util::MulInverse(candidate, cNum32));
+      break;
+    }else{candidate++;}
+  }
   for(size_t i = 0;i<bNum;++i){
     buckets.push_back(Bucket<no_layer, T>{no_cnt, width_cnt});
   }
@@ -727,7 +755,8 @@ size_t Brick<no_layer, T>::bsize() const{
 template <int32_t no_layer, typename T>
 size_t Brick<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
   size_t result = 0;
-  for(auto index:idxs){
+  for(auto ori_index:idxs){
+    size_t index = (ori_index*pseed)%cNum;
     size_t bktIdx = index/perBkt;
     size_t cIdx = index%perBkt;
     result+=buckets[bktIdx].csize(cIdx);
