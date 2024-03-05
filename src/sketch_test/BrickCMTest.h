@@ -27,7 +27,7 @@ public:
   void initPtr(int32_t counter_num, Counter::Brick<no_layer, T>& counter, Util::ConfigParser& parser) override;
 
   /**
-   * @brief Test CM sketch with ACS
+   * @brief Test CM sketch with Brick
    * @details An overriden method
    */
   void runTest() override;

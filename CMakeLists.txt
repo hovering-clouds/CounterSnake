@@ -103,7 +103,7 @@ endfunction(add_user_sketch)
 # Normal Sketch
 add_user_sketch(CM CMSketch)
 #add_user_sketch(FR FlowRadar)
-#add_user_sketch(HP HashPipe)
+add_user_sketch(HP HashPipe)
 #add_user_sketch(DT Deltoid)
 
 # Additive Counter Sharing

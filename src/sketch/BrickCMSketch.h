@@ -1,9 +1,9 @@
 /**
  * @file BrickCMSketch.h
  * @author hc (you@domain.com)
- * @brief Implementation of Count Min Sketch with ACS counters
+ * @brief Implementation of Count Min Sketch with Brick
  *
- * @copyright Copyright (c) 2023
+ * @copyright Copyright (c) 2024
  *
  */
 #pragma once
@@ -111,7 +111,7 @@ size_t BrickCMSketch<key_len, no_layer, T, hash_t>::size() const {
   }
   return sizeof(*this)                // instance
          + sizeof(hash_t) * depth     // hashing class
-         + counter.rsize()*(cntNum())/(8*counter.getcNum()) // redundant btis
+         + counter.rsize()*(cntNum())/(8*counter.getcNum()) // redundant bits
          + counter.csize(idxs)/8;
 }
 

@@ -461,7 +461,7 @@ public:
   void dumpFreeCnt(std::ostream& os) const{
     for(size_t i = 1; i < no_layer; ++i){
       for(size_t j = 0; j < bNum; ++j){
-        os << buckets[i].getFreeCnt(i) << ' ';
+        os << buckets[j].getFreeCnt(i) << ' ';
       }
       os << std::endl;
     }
