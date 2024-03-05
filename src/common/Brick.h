@@ -232,6 +232,16 @@ public:
    */
   void dumpOri(std::ostream& os) const;
   /**
+   * @brief Check the consistency between counters and ori_counters
+   * 
+   */
+  bool validate() const{
+    for(size_t i = 0; i < no_cnt[0]; ++i){
+      if(getCnt(i)!=getOriCnt(i)){return false;}
+    }
+    return true;
+  }
+  /**
    * @brief Clear the counters
    * 
    */
@@ -454,6 +464,18 @@ public:
         os << buckets[i].getFreeCnt(i) << ' ';
       }
       os << std::endl;
+    }
+  }
+  /**
+   * @brief Check the consistency between counters and ori_counters
+   * 
+   */
+  void validate() const{
+    for (size_t i = 0; i < bNum; i++){
+      if(!buckets[i].validate()){
+        std::cerr << "Inconsistency of bucket counters found!" << std::endl;
+        break;
+      }
     }
   }
   /**

@@ -129,8 +129,11 @@ void TestBrick::runTest() {
   std::cout << "overflow: " << counter.getOfNum() << std::endl;
   std::ofstream outf("tmpCnt.txt", std::ios::out);
   std::ofstream outf2("tmpOri.txt", std::ios::out);
+  std::ofstream outf3("tmpFree.txt", std::ios::out);
   counter.dumpCnt(outf);
   counter.dumpOri(outf2);
+  counter.dumpFreeCnt(outf3);
+  counter.validate();
   return;
 }
 
