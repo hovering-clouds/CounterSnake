@@ -44,10 +44,10 @@ private:
    */
   std::vector<Util::DynamicIntX<T>> cnt_array[no_layer];
   /**
-   * @brief Status bits
+   * @brief Status array
    *
    */
-  std::vector<bool> status_bits[no_layer];
+  std::vector<size_t> status_array[no_layer];
   /**
    * @brief Original counters(ground truth)
    *
@@ -437,8 +437,9 @@ Bucket<no_layer, T>::Bucket(
   for (int32_t i = 0; i < no_layer; ++i) {
     cnt_array[i] = std::vector<Util::DynamicIntX<T>>(no_cnt[i], {width_cnt[i]});
   }
-  for (int32_t i = 0; i < no_layer-1; ++i) {
-    status_bits[i] = std::vector<bool>(no_cnt[i], false);
+  for (int32_t i = 1; i < no_layer; ++i) {
+    // initialize status_array of layer i with number of counters in layer i-1
+    status_array[i] = std::vector<size_t>(no_cnt[i], no_cnt[i-1]);
   }
   // original counters, value initialized
   original_cnt.resize(no_cnt[0]);
@@ -457,50 +458,25 @@ T Bucket<no_layer, T>::updateSegment(const int32_t layer, const size_t index, co
           "Counter overflow at the last layer in Bucket, overflow by " +
           std::to_string(c_overflow) + ".");
     }
-    if(status_bits[layer][index]){
-      // get index at next layer
-      size_t next_index = 0;
-      for(size_t i = 0;i<index;++i){
-        next_index+=status_bits[layer][i];
+    // 1. find an previously allocated counter
+    for(size_t nxt = 0;nxt<no_cnt[layer+1];++nxt){
+      if(status_array[layer+1][nxt]==index){
+        T u_overflow = updateSegment(layer+1, nxt, c_overflow);
+        return u_overflow << width_cnt[layer];
       }
-      T u_overflow = updateSegment(layer+1, next_index, c_overflow);
-      return u_overflow << width_cnt[layer];
-    } else {
-      // 1. get index at next layer
-      size_t next_index = 0;
-      for(size_t i = 0;i<index;++i){
-        next_index+=status_bits[layer][i];
-      }
-      // 2. check if overflowed
-      size_t num_used = next_index;
-      for(size_t i = index+1;i<no_cnt[layer];++i){
-        num_used+=status_bits[layer][i];
-      }
-      if(num_used==no_cnt[layer+1]){ // bucket overflow
-        overflow = true;
-        migrate();
-        return c_overflow << width_cnt[layer];
-      }
-      // 3. allocate a next-layer counter by moving counters backwards
-      status_bits[layer][index] = true;
-      for(size_t i = no_cnt[layer+1]-1;i>next_index;--i){
-        cnt_array[layer+1][i] = cnt_array[layer+1][i-1];
-      }
-      cnt_array[layer+1][next_index].reset();
-      // 4. Also need to move the status bits. So in hardware inplmentation, we can 
-      // consider putting status bits and counters together, so one shift is enough.
-      // However, this technique violates the hypothesis that status bits are in one word.
-      // Also, popcount operation needs that status bits are stored continiously.
-      if(layer+1<no_layer-1){
-        for(size_t i = no_cnt[layer+1]-1;i>next_index;--i){
-          status_bits[layer+1][i] = status_bits[layer+1][i-1];
-        }
-        status_bits[layer+1][next_index] = false;
-      }
-      // 5. update next layer
-      T u_overflow = updateSegment(layer+1, next_index, c_overflow);
-      return u_overflow << width_cnt[layer];
     }
+    // 2. allocate a counter
+    for(size_t nxt = 0;nxt<no_cnt[layer+1];++nxt){
+      if(status_array[layer+1][nxt]==no_cnt[layer]){
+        status_array[layer+1][nxt] = index;
+        T u_overflow = updateSegment(layer+1, nxt, c_overflow);
+        return u_overflow << width_cnt[layer];
+      }
+    }
+    // 3. no counter available, overflow
+    overflow = true;
+    migrate();
+    return c_overflow << width_cnt[layer];
   }
   return static_cast<T>(0);
 }
@@ -516,16 +492,18 @@ void Bucket<no_layer, T>::migrate(){
   for (size_t j = 0;j<no_cnt[no_layer-1];++j){
     full_box[j] = cnt_array[no_layer-1][j].getVal();
   }
-  for (int32_t i = no_layer-2; i >= 0; --i){
-    size_t cur_idx = 0;
+  for (int32_t i = no_layer-1; i > 0; --i){
+    // copy the values of lower layer counter
+    for (size_t j = 0;j<no_cnt[i-1];++j){
+      tmp_box[j] = cnt_array[i-1][j].getVal();
+    }
+    // add the values from the upper layer to the lower layer
     for (size_t j = 0;j<no_cnt[i];++j){
-      tmp_box[j] = cnt_array[i][j].getVal();
-      if(status_bits[i][j]){
-        tmp_box[j] += full_box[cur_idx]<<width_cnt[i];
-        cur_idx+=1;
+      if(status_array[i][j]<no_cnt[i-1]){
+        tmp_box[status_array[i][j]] += full_box[j]<<width_cnt[i-1];
       }
     }
-    std::copy_n(tmp_box, no_cnt[i], full_box);
+    std::copy_n(tmp_box, no_cnt[i-1], full_box);
   }
   delete[] tmp_box;
 }
@@ -555,19 +533,23 @@ T Bucket<no_layer, T>::query(size_t index){
     return full_box[index];
   } else {
     size_t cur_bits = 0;
+    size_t cur_idx = index;
     T result = cnt_array[0][index].getVal();
     for (size_t i = 1; i < no_layer; i++){
-      if(!status_bits[i-1][index]){break;} // no overflow to this layer
       cur_bits+=width_cnt[i-1];
-      T next_index = 0;
-      for (size_t j = 0; j < index; j++){
-        next_index+=status_bits[i-1][j];
+      bool oflw = false;
+      for (size_t j = 0;j < no_cnt[i]; j++){
+        if(status_array[i][j]==cur_idx){
+          oflw = true;
+          cur_idx = j;
+          result+=cnt_array[i][j].getVal() << cur_bits;
+          break;
+        }
       }
-      index = next_index;
-      result+=cnt_array[i][index].getVal()<<cur_bits;
+      if(!oflw){break;}
     }
     return result;
-    }
+  }
 }
 
 template <int32_t no_layer, typename T>
@@ -581,16 +563,18 @@ void Bucket<no_layer, T>::decode(){
     for (size_t j = 0;j<no_cnt[no_layer-1];++j){
       decoded_cnt[j] = cnt_array[no_layer-1][j].getVal();
     }
-    for (int32_t i = no_layer-2; i >= 0; --i){
-      size_t cur_idx = 0;
+    for (int32_t i = no_layer-1; i > 0; --i){
+      // copy the values of lower layer counter
+      for (size_t j = 0;j<no_cnt[i-1];++j){
+        tmp_box[j] = cnt_array[i-1][j].getVal();
+      }
+      // add the values from the upper layer to the lower layer
       for (size_t j = 0;j<no_cnt[i];++j){
-        tmp_box[j] = cnt_array[i][j].getVal();
-        if(status_bits[i][j]){
-          tmp_box[j] += decoded_cnt[cur_idx]<<width_cnt[i];
-          cur_idx+=1;
+        if(status_array[i][j]<no_cnt[i-1]){
+          tmp_box[status_array[i][j]] += decoded_cnt[j]<<width_cnt[i-1];
         }
       }
-      std::copy_n(tmp_box, no_cnt[i], decoded_cnt.begin());
+      std::copy_n(tmp_box, no_cnt[i-1], decoded_cnt.begin());
     }
     delete[] tmp_box;
   }
@@ -603,15 +587,17 @@ size_t Bucket<no_layer, T>::bsize() const{
   constexpr size_t obits = 1; // overflow
   size_t fbits = 0; // full_box bits
   size_t max_width = 0;
-  for (size_t i = 0; i < no_layer; i++){
+  cbits += no_cnt[0]*width_cnt[0];
+  max_width += width_cnt[0];
+  for (size_t i = 1; i < no_layer; i++){
     cbits+=no_cnt[i]*width_cnt[i];
-    sbits+=no_cnt[i];
+    sbits+=no_cnt[i]*static_cast<size_t>(ceil(log2(no_cnt[i-1]+1)));
     max_width+=width_cnt[i];
   }
-  sbits-=no_cnt[no_layer-1];
   if(overflow){
     fbits = no_cnt[0]*max_width;
   }
+  //std::cout << cbits << ' '<< sbits << ' ' << fbits << std::endl;
   return (cbits+7)/8+(sbits+obits+7)/8+(fbits+7)/8;
 }
 
@@ -636,8 +622,8 @@ void Bucket<no_layer, T>::clear(){
   for (int32_t i = 0; i < no_layer; ++i) {
     cnt_array[i] = std::vector<Util::DynamicIntX<T>>(no_cnt[i], {width_cnt[i]});
   }
-  for (int32_t i = 0; i < no_layer; ++i) {
-    status_bits[i] = std::vector<bool>(no_cnt[i], false);
+  for (int32_t i = 1; i < no_layer; ++i) {
+    status_array[i] = std::vector<size_t>(no_cnt[i], no_cnt[i-1]);
   }
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
@@ -680,7 +666,7 @@ size_t Brick<no_layer, T>::bsize() const{
   // count the number of overflow buckets to get the minimum bits needed for full_box index.
   size_t ofNum = getOfNum();
   double ofbits_d = log2(static_cast<double>(ofNum+1));
-  size_t ofbits = static_cast<size_t>(ofbits_d);
+  size_t ofbits = static_cast<size_t>(ceil(ofbits_d));
   bytes += (bNum*ofbits+7)/8;
   return bytes;
 }
