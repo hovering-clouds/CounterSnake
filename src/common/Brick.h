@@ -215,6 +215,11 @@ public:
   size_t rsize() const{
     return rsz;
   }
+  /**
+   * @brief Get the number of free counter of the given layer
+   * 
+   */
+  size_t getFreeCnt(size_t layer) const;
 
   /**
    * @brief Dump decoded counters to ostream
@@ -437,6 +442,18 @@ public:
   void dumpOri(std::ostream& os) const{
     for (size_t i = 0; i < bNum; i++){
       buckets[i].dumpOri(os);
+    }
+  }
+  /**
+   * @brief Dump the number of free counters of each layer
+   * 
+   */
+  void dumpFreeCnt(std::ostream& os) const{
+    for(size_t i = 1; i < no_layer; ++i){
+      for(size_t j = 0; j < bNum; ++j){
+        os << buckets[i].getFreeCnt(i) << ' ';
+      }
+      os << std::endl;
     }
   }
   /**
@@ -668,6 +685,16 @@ size_t Bucket<no_layer, T>::bsize() const{
   }
   //std::cout << cbits << ' '<< sbits << ' ' << fbits << std::endl;
   return (cbits+7)/8+(sbits+obits+7)/8+(fbits+7)/8;
+}
+
+template <int32_t no_layer, typename T>
+size_t Bucket<no_layer, T>::getFreeCnt(size_t layer) const{
+  if(layer==0){return 0;}
+  size_t result = 0;
+  for(auto idx:status_array[layer]){
+    if(idx<no_cnt[layer-1]){result++;}
+  }
+  return result;
 }
 
 template <int32_t no_layer, typename T>
