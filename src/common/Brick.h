@@ -549,6 +549,10 @@ T Bucket<no_layer, T>::updateSegment(const int32_t layer, const size_t index, co
       }
     }
     // 2. allocate a counter
+    if(c_overflow < static_cast<T>(0)){
+      // this check is needed, or an overflow may be triggered and this error would not be detected
+      throw std::range_error("can't represent negative counter values!");
+    }
     for(size_t nxt = 0;nxt<no_cnt[layer+1];++nxt){
       if(status_array[layer+1][nxt]==no_cnt[layer]){
         status_array[layer+1][nxt] = index;
@@ -692,7 +696,7 @@ size_t Bucket<no_layer, T>::getFreeCnt(size_t layer) const{
   if(layer==0){return 0;}
   size_t result = 0;
   for(auto idx:status_array[layer]){
-    if(idx<no_cnt[layer-1]){result++;}
+    if(idx==no_cnt[layer-1]){result++;}
   }
   return result;
 }

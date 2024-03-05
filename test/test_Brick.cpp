@@ -231,6 +231,65 @@ void TestBucketSize() {
   VERIFY(bkt.csize(11)==2+2+4+6);
 }
 
+void TestBucketNegative() {
+  Bucket<3, int32_t> bkt({12,3,1},{2,2,2});
+  bkt.update(10,1);
+  bkt.update(11,4);
+  bkt.update(2,2);
+  bkt.update(2,4);
+  VERIFY(bkt.getFreeCnt(0)==0);
+  VERIFY(bkt.getFreeCnt(1)==1);
+  VERIFY(bkt.getFreeCnt(2)==1);  
+  bkt.update(1,5);
+  VERIFY(!bkt.isOverflow());
+  bkt.update(2,-4);
+  bkt.update(11,-2);
+  VERIFY(bkt.getFreeCnt(1)==0);
+  VERIFY(bkt.query(0)==0);
+  VERIFY(bkt.query(1)==5);
+  VERIFY(bkt.query(2)==2);
+  VERIFY(bkt.query(7)==0);
+  VERIFY(bkt.query(10)==1);
+  VERIFY(bkt.query(11)==2);
+  VERIFY(!bkt.isOverflow());
+  bkt.decode();
+  VERIFY(bkt.csize(0)==2);
+  VERIFY(bkt.csize(1)==2+2+4);
+  VERIFY(bkt.csize(2)==2+2+4);
+  VERIFY(bkt.csize(3)==2);
+  VERIFY(bkt.csize(10)==2);
+  VERIFY(bkt.csize(11)==2+2+4);
+  VERIFY(bkt.rsize()==4);
+  for(size_t i = 0; i < 12; ++i){
+    VERIFY(bkt.getCnt(i)==bkt.getOriCnt(i));
+  }
+  bkt.update(0, 16);
+  bkt.update(0, 15);
+  VERIFY(bkt.isOverflow());
+  VERIFY(bkt.query(0)==31);
+  VERIFY(bkt.query(1)==5);
+  VERIFY(bkt.query(2)==2);
+  VERIFY(bkt.query(7)==0);
+  VERIFY(bkt.query(10)==1);
+  VERIFY(bkt.query(11)==2);
+}
+
+void TestBucketNegativeException() {
+  Bucket<3, int32_t> bkt({12,3,1},{2,2,2});
+  bkt.update(10,1);
+  bkt.update(11,4);
+  bkt.update(2,2);
+  bkt.update(2,4);
+  bkt.update(1,5);
+  try{
+    bkt.update(10,-2);
+    VERIFY(false);
+  }
+  catch(const std::exception& e){
+    VERIFY_EXCEPTION(e);
+  }
+}
+
 /**
  * @brief other methods in utils
  *
@@ -243,6 +302,8 @@ OMNISKETCH_DECLARE_TEST(BRICK) {
   TestBrick();
   TestBucketStress();
   TestBucketSize();
+  TestBucketNegative();
+  TestBucketNegativeException();
 }
 /** @endcond */
 #undef TEST_BRICK
