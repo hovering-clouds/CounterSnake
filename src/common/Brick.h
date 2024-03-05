@@ -59,6 +59,16 @@ private:
    */
   std::vector<T> decoded_cnt;
   /**
+   * @brief Bits of each counter
+   * 
+   */
+  std::vector<size_t> size_cnt;
+  /**
+   * @brief Size of unused higher-layer counters and status-arrays (in bits)
+   * 
+   */
+  size_t rsz;
+  /**
    * @brief The pointer to corresponding full-box. (Valid when `overflow` is true)
    * 
    * @note Hardware implementation should use a few bits as index to full-box array.
@@ -136,7 +146,8 @@ public:
    */
   T query(size_t index);
   /**
-   * @brief Decode the counters and store the results into inner vector
+   * @brief Decode the counters and store the results into inner vector. 
+   * Also get the true length of each counter and fill it into `size_cnt`. 
    * 
    */
   void decode();
@@ -188,6 +199,22 @@ public:
    *     This can be only calculated by outer users of Buckets(ex. Brick) though.
    */
   size_t bsize() const;
+
+  /**
+   * @brief Get the memory usage of a specific counter, return in bits
+   * 
+   */
+  size_t csize(size_t index) const{
+    return size_cnt[index];
+  }
+
+  /**
+   * @brief Get the redundant memory in bits. (Size of unused higher-layer counters and status-arrays)
+   * 
+   */
+  size_t rsize() const{
+    return rsz;
+  }
 
   /**
    * @brief Dump decoded counters to ostream
@@ -394,7 +421,7 @@ template <int32_t no_layer, typename T>
 Bucket<no_layer, T>::Bucket(
       const std::vector<size_t> &no_cnt,
       const std::vector<size_t> &width_cnt)
-      : no_cnt(no_cnt), width_cnt(width_cnt), full_box(0), overflow(false){
+      : no_cnt(no_cnt), width_cnt(width_cnt), full_box(0), rsz(0), overflow(false){
   // validity check
   if (no_layer <= 1) {
     throw std::invalid_argument(
@@ -446,6 +473,8 @@ Bucket<no_layer, T>::Bucket(
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
   decoded_cnt.resize(no_cnt[0]);
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
+  size_cnt.resize(no_cnt[0]);
+  std::fill_n(size_cnt.begin(), no_cnt[0], 0);
 }
 
 template <int32_t no_layer, typename T>
@@ -554,29 +583,32 @@ T Bucket<no_layer, T>::query(size_t index){
 
 template <int32_t no_layer, typename T>
 void Bucket<no_layer, T>::decode(){
+  // scan the counters layer by layer(bottom-up)
+  for(size_t i = 0;i<no_cnt[0];++i){
+    decoded_cnt[i] = cnt_array[0][i].getVal();
+    size_cnt[i] = width_cnt[0];
+  }
+  size_t cur_bits = width_cnt[0];// we'll need to shift this much bits in the end
+  for(size_t lr = 1;lr<no_layer;++lr){
+    for(size_t j = 0;j<no_cnt[lr];++j){
+      if(status_array[lr][j]<no_cnt[lr-1]){// a counter at layer `lr` has been allocated
+        size_t idx = status_array[lr][j];
+        for(size_t dw = lr-1;dw!=0;--dw){// down to the lowest layer to get the index
+          idx = status_array[dw][idx]; // lower counters must have been allocated
+        }
+        decoded_cnt[idx] += cnt_array[lr][j].getVal() << cur_bits;
+        size_cnt[idx] += width_cnt[lr]+static_cast<size_t>(ceil(log2(no_cnt[lr-1]+1)));
+      } else {
+        rsz += width_cnt[lr]+static_cast<size_t>(ceil(log2(no_cnt[lr-1]+1)));
+      }
+    }
+    cur_bits+=width_cnt[lr];
+  }
   if(overflow){
     std::copy_n(full_box, no_cnt[0], decoded_cnt.begin());
-  } else {
-    T* tmp_box = new T[no_cnt[0]];
-    std::fill_n(tmp_box, no_cnt[0], 0);
-    // decode all the counters layer by layer
-    for (size_t j = 0;j<no_cnt[no_layer-1];++j){
-      decoded_cnt[j] = cnt_array[no_layer-1][j].getVal();
+    for(size_t i = 0;i<no_cnt[0];++i){
+      size_cnt[i]+=cur_bits;
     }
-    for (int32_t i = no_layer-1; i > 0; --i){
-      // copy the values of lower layer counter
-      for (size_t j = 0;j<no_cnt[i-1];++j){
-        tmp_box[j] = cnt_array[i-1][j].getVal();
-      }
-      // add the values from the upper layer to the lower layer
-      for (size_t j = 0;j<no_cnt[i];++j){
-        if(status_array[i][j]<no_cnt[i-1]){
-          tmp_box[status_array[i][j]] += decoded_cnt[j]<<width_cnt[i-1];
-        }
-      }
-      std::copy_n(tmp_box, no_cnt[i-1], decoded_cnt.begin());
-    }
-    delete[] tmp_box;
   }
 }
 
@@ -619,6 +651,7 @@ void Bucket<no_layer, T>::dumpOri(std::ostream& os) const{
 
 template <int32_t no_layer, typename T>
 void Bucket<no_layer, T>::clear(){
+  rsz = 0;
   for (int32_t i = 0; i < no_layer; ++i) {
     cnt_array[i] = std::vector<Util::DynamicIntX<T>>(no_cnt[i], {width_cnt[i]});
   }
@@ -627,6 +660,7 @@ void Bucket<no_layer, T>::clear(){
   }
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
+  std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   if(overflow){
     delete[] full_box;
     full_box = nullptr;
