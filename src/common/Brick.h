@@ -256,6 +256,11 @@ class Brick {
    */
   size_t perBkt;
   /**
+   * @brief Size of unused higher-layer counters and status-arrays (in bits)
+   * 
+   */
+  size_t rsz;
+  /**
    * @brief Buckets used to store the counters
    * 
    */
@@ -319,6 +324,7 @@ public:
   void decode(){
     for (size_t i = 0; i < bNum; i++){
       buckets[i].decode();
+      rsz+=buckets[i].rsize();
     }
   }
 
@@ -372,7 +378,18 @@ public:
    * 
    */
   size_t bsize() const;
-
+  /**
+   * @brief Get the memory usage of a specific counter, return in bits
+   * 
+   */
+  size_t csize(const std::vector<size_t>& idxs) const;
+  /**
+   * @brief Get the redundant memory in bits. (Size of unused higher-layer counters and status-arrays)
+   * 
+   */
+  size_t rsize() const{
+    return rsz;
+  }
   /**
    * @brief Get the number of overflow buckets
    * 
@@ -411,6 +428,7 @@ public:
     for (size_t i = 0; i < bNum; i++){
       buckets[i].clear();
     }
+    rsz = 0;
   }
 };
 
@@ -677,6 +695,7 @@ void Brick<no_layer, T>::initBucket(
   cNum = counter_num;
   perBkt = no_cnt[0];
   bNum = (counter_num+perBkt-1)/perBkt;
+  rsz = 0;
   for(size_t i = 0;i<bNum;++i){
     buckets.push_back(Bucket<no_layer, T>{no_cnt, width_cnt});
   }
@@ -703,6 +722,17 @@ size_t Brick<no_layer, T>::bsize() const{
   size_t ofbits = static_cast<size_t>(ceil(ofbits_d));
   bytes += (bNum*ofbits+7)/8;
   return bytes;
+}
+
+template <int32_t no_layer, typename T>
+size_t Brick<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
+  size_t result = 0;
+  for(auto index:idxs){
+    size_t bktIdx = index/perBkt;
+    size_t cIdx = index%perBkt;
+    result+=buckets[bktIdx].csize(cIdx);
+  }
+  return result;
 }
 
 }// end of namespace Counter

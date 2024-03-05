@@ -98,16 +98,21 @@ T BrickCMSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flo
   T min_val = std::numeric_limits<T>::max();
   for (int32_t i = 0; i < depth; ++i) {
     int32_t index = hash_fns[i](flowkey) % width + i*width + offset;
-    min_val = std::min(min_val, counter.getOriCnt(index));
+    min_val = std::min(min_val, counter.getCnt(index));
   }
   return min_val;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 size_t BrickCMSketch<key_len, no_layer, T, hash_t>::size() const {
+  std::vector<size_t> idxs(cntNum());
+  for(size_t i = 0;i<cntNum();++i){
+    idxs[i]=i+offset;
+  }
   return sizeof(*this)                // instance
          + sizeof(hash_t) * depth     // hashing class
-         + counter.bsize()*(width*depth)/counter.getcNum(); // counter
+         + counter.rsize()*(cntNum())/(8*counter.getcNum()) // redundant btis
+         + counter.csize(idxs)/8;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
