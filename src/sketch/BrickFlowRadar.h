@@ -1,5 +1,5 @@
 /**
- * @file ACS_FlowRadar.h
+ * @file BrickFlowRadar.h
  * @author dromniscience (you@domain.com)
  * @brief FlowRadar with counter sharing
  *
@@ -9,40 +9,45 @@
 #pragma once
 
 #include <common/hash.h>
-#include <common/ACScounter.h>
+#include <common/Brick.h>
 #include <sketch/BloomFilter.h>
 
 namespace OmniSketch::Sketch {
 /**
- * @brief Flow Radar with counter sharing
+ * @brief Flow Radar with Brick
+ * 
+ * @details Layout of Brick counters: i_th entry corresponds to
+ * 2*i and 2*i+1 th counter in Brick, where 2*i th is flow_count,
+ * 2*i+1 th is packet_count.
  *
  * @tparam key_len  length of flowkey
  * @tparam T        type of the counter
  * @tparam hash_t   hashing class
  */
-template <int32_t key_len, typename T, typename hash_t = Hash::AwareHash>
-class ACS_FlowRadar : public SketchBase<key_len, T> {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
+class BrickFlowRadar : public SketchBase<key_len, T> {
 private:
   struct CountTableEntry {
     FlowKey<key_len> flowXOR;
     T flow_count;
-    CountTableEntry() : flowXOR(), flow_count(0) {}
+    T packet_count;
+    CountTableEntry() : flowXOR(), flow_count(0), packet_count(0) {}
   };
 
   const int32_t num_bitmap;
   const int32_t num_bit_hash;
-  const int32_t num_count_table;
+  const int32_t num_count_table; // number of counters
   const int32_t num_count_hash;
   int32_t num_flows;
   int32_t offset;
 
   hash_t *hash_fns;
   BloomFilter<key_len, hash_t> *flow_filter;
-  CountTableEntry *count_table;
-  Counter::ACScounter<T>& counter;
+  FlowKey<key_len>* flow_xor;
+  Counter::Brick<no_layer, T>& counter;
 
-  ACS_FlowRadar(const ACS_FlowRadar &) = delete;
-  ACS_FlowRadar(ACS_FlowRadar &&) = delete;
+  BrickFlowRadar(const BrickFlowRadar &) = delete;
+  BrickFlowRadar(BrickFlowRadar &&) = delete;
 
 public:
   /**
@@ -54,13 +59,13 @@ public:
    * @param count_table_hash Number of hash functions in count table
    * @param counter shared counter array
    */
-  ACS_FlowRadar(int32_t flow_filter_size, int32_t flow_filter_hash, int32_t count_table_size, 
-            int32_t count_table_hash, int32_t offset_, Counter::ACScounter<T>& counter_);
+  BrickFlowRadar(int32_t flow_filter_size, int32_t flow_filter_hash, int32_t count_table_size, 
+            int32_t count_table_hash, int32_t offset_, Counter::Brick<no_layer, T>& counter_);
   /**
    * @brief Destructor
    *
    */
-  ~ACS_FlowRadar();
+  ~BrickFlowRadar();
   /**
    * @brief Update a flowkey with a certain value
    *
@@ -94,13 +99,13 @@ public:
 
 namespace OmniSketch::Sketch {
 
-template <int32_t key_len, typename T, typename hash_t>
-ACS_FlowRadar<key_len, T, hash_t>::ACS_FlowRadar(int32_t flow_filter_size,
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+BrickFlowRadar<key_len, no_layer, T, hash_t>::BrickFlowRadar(int32_t flow_filter_size,
                                          int32_t flow_filter_hash,
                                          int32_t count_table_size,
                                          int32_t count_table_hash,
                                          int32_t offset_,
-                                         Counter::ACScounter<T>& counter_)
+                                         Counter::Brick<no_layer, T>& counter_)
     : num_bitmap(Util::NextPrime(flow_filter_size)),
       num_bit_hash(flow_filter_hash), num_flows(0),
       num_count_table(Util::NextPrime(count_table_size)),
@@ -109,18 +114,18 @@ ACS_FlowRadar<key_len, T, hash_t>::ACS_FlowRadar(int32_t flow_filter_size,
   // flow filter
   flow_filter = new BloomFilter<key_len, hash_t>(num_bitmap, num_bit_hash);
   // count table
-  count_table = new CountTableEntry[num_count_table]();
+  flow_xor = new FlowKey<key_len>[num_count_table]();
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-ACS_FlowRadar<key_len, T, hash_t>::~ACS_FlowRadar() {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+BrickFlowRadar<key_len, no_layer, T, hash_t>::~BrickFlowRadar() {
   delete[] hash_fns;
   delete flow_filter;
-  delete[] count_table;
+  delete[] flow_xor;
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-void ACS_FlowRadar<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+void BrickFlowRadar<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                            T val) {
   bool exist = flow_filter->lookup(flowkey);
   // a new flow
@@ -133,16 +138,22 @@ void ACS_FlowRadar<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
     int32_t index = hash_fns[i](flowkey) % num_count_table;
     // a new flow
     if (!exist) {
-      count_table[index].flow_count++;
-      count_table[index].flowXOR ^= flowkey;
+      counter.update(2*index+offset, 1);
+      flow_xor[index] ^= flowkey;
     }
     // increment packet count
-    counter.update(index+offset, val);
+    counter.update(2*index+1+offset, val);
   }
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-Data::Estimation<key_len, T> ACS_FlowRadar<key_len, T, hash_t>::decode() {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+Data::Estimation<key_len, T> BrickFlowRadar<key_len, no_layer, T, hash_t>::decode() {
+  CountTableEntry* count_table = new CountTableEntry[num_count_table]();
+  for(int32_t i = 0; i < num_count_table; ++i){
+    count_table[i].flowXOR = flow_xor[i];
+    count_table[i].flow_count = counter.getCnt(2*i+offset);
+    count_table[i].packet_count = counter.getCnt(2*i+1+offset);
+  }
   // an optimized implementation
   class CompareFlowCount {
   public:
@@ -173,42 +184,49 @@ Data::Estimation<key_len, T> ACS_FlowRadar<key_len, T, hash_t>::decode() {
       continue;
 
     FlowKey<key_len> flowkey = count_table[index].flowXOR;
-    T size = counter[index+offset];
+    T size = count_table[index].packet_count;
     for (int i = 0; i < num_count_hash; ++i) {
       int l = hash_fns[i](flowkey) % num_count_table;
       set.erase(count_table + l);
       count_table[l].flow_count--;
-      counter[l+offset] -= size;
+      count_table[l].packet_count -= size;
       count_table[l].flowXOR ^= flowkey;
       set.insert(count_table + l);
     }
     est[flowkey] = size;
   }
+  delete[] count_table;
   return est;
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-size_t ACS_FlowRadar<key_len, T, hash_t>::size() const {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+size_t BrickFlowRadar<key_len, no_layer, T, hash_t>::size() const {
+  std::vector<size_t> idxs(2*num_count_table);
+  for(size_t i = 0;i<2*num_count_table;++i){
+    idxs[i]=i+offset;
+  }
   return sizeof(*this)                                 // instance
          + num_count_hash * sizeof(hash_t)             // hashing class
-         + num_count_table * (sizeof(T) * 2 + key_len) // count table
+         + num_count_table * key_len                   // flow_xor
+         + counter.rsize()*cntNum()/(8*counter.getcNum())
+         + counter.csize(idxs)/8                       // counter size
          + flow_filter->size();                        // flow filter
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-size_t ACS_FlowRadar<key_len, T, hash_t>::cntNum() const {
-  return num_count_table;
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+size_t BrickFlowRadar<key_len, no_layer, T, hash_t>::cntNum() const {
+  return 2*num_count_table;
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-void ACS_FlowRadar<key_len, T, hash_t>::clear() {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+void BrickFlowRadar<key_len, no_layer, T, hash_t>::clear() {
   // reset flow counter
   num_flows = 0;
   // reset flow filter
   flow_filter->clear();
   // reset count table
-  delete[] count_table;
-  count_table = new CountTableEntry[num_count_table]();
+  delete[] flow_xor;
+  flow_xor = new FlowKey<key_len>[num_count_table]();
 }
 
 } // namespace OmniSketch::Sketch

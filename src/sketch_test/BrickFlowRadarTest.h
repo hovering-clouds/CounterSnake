@@ -1,18 +1,18 @@
 /**
- * @file ACSFlowRadarTest.h
+ * @file BrickFlowRadarTest.h
  * @author hc (you@domain.com)
- * @brief Test Flow Radar with counter sharing
+ * @brief Test Flow Radar with Brick
  *
- * @copyright Copyright (c) 2023
+ * @copyright Copyright (c) 2024
  *
  */
 #pragma once
 
-#include "ACSTest.h"
-#include <sketch/ACS_FlowRadar.h>
+#include "BrickTest.h"
+#include <sketch/BrickFlowRadar.h>
 
-#define ACS_FR_PARA_PATH "ACS.FlowRadar.para"
-#define ACS_FR_TEST_PATH "ACS.FlowRadar.test"
+#define BRICK_FR_PARA_PATH "Brick.FlowRadar.para"
+#define BRICK_FR_TEST_PATH "Brick.FlowRadar.test"
 
 namespace OmniSketch::Test {
 
@@ -20,16 +20,16 @@ namespace OmniSketch::Test {
  * @brief Testing class for Flow Radar
  *
  */
-template <int32_t key_len, typename T, typename hash_t = Hash::AwareHash>
-class ACSFlowRadarTest : public ACSTestBase<key_len, T> {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
+class BrickFlowRadarTest : public BrickTestBase<key_len, no_layer, T> {
   using TestBase<key_len, T>::config_file;
 
 public:
 
-  ACSFlowRadarTest(const std::string_view config_file, Data::StreamData<key_len>& data_, Data::CntMethod method)
-      : ACSTestBase<key_len, T>("ACS Flow Radar", config_file, ACS_FR_TEST_PATH, data_, method) {}
+  BrickFlowRadarTest(const std::string_view config_file, Data::StreamData<key_len>& data_, Data::CntMethod method)
+      : BrickTestBase<key_len, no_layer, T>("Brick Flow Radar", config_file, BRICK_FR_TEST_PATH, data_, method) {}
 
-  void initPtr(int32_t counter_num, Counter::ACScounter<T>& counter, Util::ConfigParser& parser) override;
+  void initPtr(int32_t counter_num, Counter::Brick<no_layer, T>& counter, Util::ConfigParser& parser) override;
 
   /**
    * @brief Test Flow Radar with ACS
@@ -48,13 +48,13 @@ public:
 
 namespace OmniSketch::Test {
 
-template <int32_t key_len, typename T, typename hash_t>
-void ACSFlowRadarTest<key_len, T, hash_t>::initPtr(int32_t counter_num, Counter::ACScounter<T>& counter, Util::ConfigParser& parser){
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+void BrickFlowRadarTest<key_len, no_layer, T, hash_t>::initPtr(int32_t counter_num, Counter::Brick<no_layer, T>& counter, Util::ConfigParser& parser){
 
   /// step i. List Sketch Config
   int32_t flow_filter_bit, flow_filter_hash, count_table_num,
       count_table_hash;  // sketch config
-  parser.setWorkingNode(ACS_FR_PARA_PATH);
+  parser.setWorkingNode(BRICK_FR_PARA_PATH);
 
   /// Step ii. Parse
   if (!parser.parseConfig(flow_filter_bit, "flow_filter_bit"))
@@ -69,12 +69,12 @@ void ACSFlowRadarTest<key_len, T, hash_t>::initPtr(int32_t counter_num, Counter:
   /// Step iii. Prepare Sketch
   /// remember that the left ptr must point to the base class in order to call
   /// the methods in it
-  this->ptr = std::make_unique<Sketch::ACS_FlowRadar<key_len, T, hash_t>>(
+  this->ptr = std::make_unique<Sketch::BrickFlowRadar<key_len, no_layer, T, hash_t>>(
         flow_filter_bit, flow_filter_hash, count_table_num, count_table_hash, counter_num, counter);
 }
 
-template <int32_t key_len, typename T, typename hash_t>
-void ACSFlowRadarTest<key_len, T, hash_t>::runTest() {
+template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
+void BrickFlowRadarTest<key_len, no_layer, T, hash_t>::runTest() {
 
   Data::GndTruth<key_len, T> gnd_truth;
   gnd_truth.getGroundTruth(this->data.begin(), this->data.end(), this->cnt_method);
@@ -88,6 +88,6 @@ void ACSFlowRadarTest<key_len, T, hash_t>::runTest() {
 
 } // namespace OmniSketch::Test
 
-#undef ACS_FR_PARA_PATH
-#undef ACS_FR_TEST_PATH
+#undef BRICK_FR_PARA_PATH
+#undef BRICK_FR_TEST_PATH
 

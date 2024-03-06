@@ -11,6 +11,7 @@
 #include <sketch_test/BrickTest.h>
 #include <sketch_test/BrickCMTest.h>
 #include <sketch_test/BrickHashPipeTest.h>
+#include <sketch_test/BrickFlowRadarTest.h>
 
 #define BRICK_CONFIG_PATH "Brick.config"
 
@@ -59,10 +60,9 @@ void TestBrick::initPtr(toml::array& sketch_list,
     std::string str = node.as_string()->value_or<std::string>("");
     if(str.compare("CM")==0){ // CM sketch
       testPtr.push_back(std::make_unique<BrickCMTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
-    }// else if(str.compare("FR")==0){ // FlowRadar
-    //  testPtr.push_back(std::make_unique<ACSFlowRadarTest<KEYLEN, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
-    //} 
-    else if(str.compare("HP")==0){ //HashPipe
+    } else if(str.compare("FR")==0){ // FlowRadar
+      testPtr.push_back(std::make_unique<BrickFlowRadarTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+    } else if(str.compare("HP")==0){ //HashPipe
     testPtr.push_back(std::make_unique<BrickHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } //else if(str.compare("DT")==0){ //Deltoid
     //  testPtr.push_back(std::make_unique<ACSDeltoidTest<KEYLEN, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
@@ -73,7 +73,7 @@ void TestBrick::initPtr(toml::array& sketch_list,
 }
 
 void TestBrick::runTest() {
-  srand(20240227);
+  srand(20240228);
   /// step i: parse ACS param
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;

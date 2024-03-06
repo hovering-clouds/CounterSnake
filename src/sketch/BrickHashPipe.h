@@ -192,8 +192,8 @@ BrickHashPipe<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) co
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 size_t BrickHashPipe<key_len, no_layer, T, hash_t>::size() const {
-  std::vector<size_t> idxs(cntNum());
-  for(size_t i = 0;i<cntNum();++i){
+  std::vector<size_t> idxs(depth*width);
+  for(size_t i = 0;i<depth*width;++i){
     idxs[i]=i+offset;
   }
   return sizeof(*this)                    // instance

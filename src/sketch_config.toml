@@ -28,7 +28,7 @@
 [CM] # Count Min Sketch
 
   [CM.para]
-  depth = 2
+  depth = 3
   #width = 1000
   width = 80001
 
@@ -49,7 +49,7 @@
 [Brick] # Brick
   
   [Brick.config]
-    sketch = ["CM", "HP"]
+    sketch = ["CM", "HP", "FR"]
     data = "../data/data-100K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
@@ -58,7 +58,7 @@
 
   [Brick.CM]
     [Brick.CM.para]
-      depth = 2
+      depth = 3
       width = 80001
     [Brick.CM.test]
       update = ["RATE"]
@@ -80,10 +80,10 @@
 
   [Brick.FlowRadar]
     [Brick.FlowRadar.para]
-      flow_filter_bit = 1000000
-      flow_filter_hash = 50
-      count_table_num = 500000
-      count_table_hash = 5
+      flow_filter_bit = 2380150
+      flow_filter_hash = 30
+      count_table_num = 142510
+      count_table_hash = 3
       #flow_filter_bit = 10000
       #flow_filter_hash = 5
       #count_table_num = 5000
@@ -136,17 +136,17 @@
 [FlowRadar] # Flow Radar
 
   [FlowRadar.para]
-    #flow_filter_bit = 1000000
-    #flow_filter_hash = 50
-    #count_table_num = 500000
+    flow_filter_bit = 2380150
+    flow_filter_hash = 30
+    count_table_num = 142510
+    count_table_hash = 3
+    #flow_filter_bit = 10000
+    #flow_filter_hash = 5
+    #count_table_num = 5000
     #count_table_hash = 5
-    flow_filter_bit = 10000
-    flow_filter_hash = 5
-    count_table_num = 5000
-    count_table_hash = 5
   
   [FlowRadar.data]
-    data = "../data/t.bin"
+    data = "../data/data-100K.bin"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
   
   [FlowRadar.test]
