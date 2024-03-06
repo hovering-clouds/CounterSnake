@@ -144,7 +144,7 @@ void Deltoid<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
 template <int32_t key_len, typename T, typename hash_t>
 T Deltoid<key_len, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
 
-  static bool cnt_distrib = true;
+  static bool cnt_distrib = false;
   if (cnt_distrib) {
     std::vector<double> distrib(32);
     for (int32_t i = 0; i < num_hash_; ++i)

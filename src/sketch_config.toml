@@ -49,12 +49,12 @@
 [Brick] # Brick
   
   [Brick.config]
-    sketch = ["CM", "HP", "FR"]
+    sketch = ["CM", "HP", "DT", "FR"]
     data = "../data/data-100K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    width_cnt = [6, 6, 4]
-    no_cnt = [64, 8, 2]
+    width_cnt = [8, 4, 4]
+    no_cnt = [63, 12, 2]
 
   [Brick.CM]
     [Brick.CM.para]
