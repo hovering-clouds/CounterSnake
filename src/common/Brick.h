@@ -132,6 +132,20 @@ public:
     return tag_array[layer][index];
   }
   /**
+   * @brief Access width_cnt
+   * 
+   */
+  size_t getWidth(const int32_t layer){
+    return width_cnt.at(layer);
+  }
+  /**
+   * @brief Access no_cnt
+   * 
+   */
+  size_t getCntNo(const int32_t layer){
+    return no_cnt.at(layer);
+  }
+  /**
    * @brief Get the number of unused counters of the given layer
    * 
    */
@@ -201,11 +215,6 @@ private:
    *
    */
   std::vector<size_t> di;
-  /**
-   * @brief Width of counters on each layer, from low to high.
-   *
-   */
-  std::vector<size_t> width_cnt;
   /**
    * @brief Original counters(ground truth)
    *
@@ -513,12 +522,11 @@ size_t Bucket<no_layer, T>::bits_num(size_t tag_len) const{
 template <int32_t no_layer, typename T>
 void Brick<no_layer, T>::initBucket( size_t counter_num,
     size_t group_num, const std::vector<size_t> &dway,
-    const std::vector<size_t> &width_cnt_){
+    const std::vector<size_t> &width_cnt){
   cNum = counter_num;
   gNum = group_num;
   rsz = 0;
   di = dway;
-  width_cnt = width_cnt_;
   // initialize permutation seeds
   int32_t candidate = 31;
   int32_t cNum32 = static_cast<int32_t>(cNum);
@@ -592,7 +600,7 @@ void Brick<no_layer, T>::update(size_t ori_index, T val){
 template <int32_t no_layer, typename T>
 std::pair<T, int32_t> Brick<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
-  size_t cur_bits = width_cnt[0];
+  size_t cur_bits = bucket_ptr->getWidth(0);
   T result = bucket_ptr->getSegment(0, index);
   int32_t lr;
   for(lr = 1;lr<no_layer;++lr){
@@ -603,7 +611,7 @@ std::pair<T, int32_t> Brick<no_layer, T>::query_with_layer(size_t ori_index){
       if(bucket_ptr->getTag(lr, nextId)==tag){
         index = nextId;
         result+=bucket_ptr->getSegment(lr, index)<<cur_bits;
-        cur_bits+=width_cnt[lr];
+        cur_bits+= bucket_ptr->getWidth(lr);
         matched = true;
         break;
       }
@@ -648,9 +656,9 @@ void Brick<no_layer, T>::clear_cnt(size_t ori_index){
 template <int32_t no_layer, typename T>
 void Brick<no_layer, T>::decode(){
   std::vector<size_t> accum_bits(no_layer);
-  accum_bits[0] = width_cnt[0];
+  accum_bits[0] = bucket_ptr->getWidth(0);
   for(int32_t lr=1;lr<no_layer;++lr){
-    accum_bits[lr] = accum_bits[lr-1]+width_cnt[lr];
+    accum_bits[lr] = accum_bits[lr-1]+bucket_ptr->getWidth(lr);
   }
   size_t tag_len = ceil(log2(gNum))+1;
   // decoded values
@@ -668,7 +676,7 @@ void Brick<no_layer, T>::decode(){
   }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
-    rsz += bucket_ptr->getUnusedNum(lr)*(width_cnt[lr]+tag_len);
+    rsz += bucket_ptr->getUnusedNum(lr)*(bucket_ptr->getWidth(lr)+tag_len);
   }
 }
 
@@ -697,6 +705,11 @@ void Brick<no_layer, T>::dumpOfIdx(std::ostream& os) const{
     index_sets[lr].insert(idx);
   }
   for(int32_t lr = 0;lr<no_layer;++lr){
+    os << "layer " << lr << " ratio: ";
+    os << index_sets[lr].size() << '/' << bucket_ptr->getCntNo(lr);
+    os << std::endl;
+  }
+  for(int32_t lr = 0;lr<no_layer;++lr){
     os << "layer " << lr << ": ";
     for(auto idx:index_sets[lr]){
       os << idx << ' ';
@@ -708,7 +721,9 @@ void Brick<no_layer, T>::dumpOfIdx(std::ostream& os) const{
 template <int32_t no_layer, typename T>
 void Brick<no_layer, T>::dumpFreeCnt(std::ostream& os) const{
   for(int32_t lr = 0;lr<no_layer;++lr){
-    os << "Unused segments in layer " << lr << ": " << bucket_ptr->getUnusedNum(lr) << std::endl;
+    os << "Unused segments in layer " << lr << ": ";
+    os << bucket_ptr->getUnusedNum(lr) << '/' << bucket_ptr->getCntNo(lr);
+    os << std::endl;
   }
 }
 
