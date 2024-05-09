@@ -76,7 +76,7 @@ void TestBrick::initPtr(toml::array& sketch_list,
 void TestBrick::runTest() {
   srand(20240228);
   /// step i: parse ACS param
-  size_t group_num;
+  size_t group_num, width_total;
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;
   std::vector<size_t> dway, width_cnt;
@@ -97,6 +97,7 @@ void TestBrick::runTest() {
     return;
   if (!parser.parseConfig(width_cnt, "width_cnt"))
     return;
+  width_total = std::accumulate(width_cnt.begin(),width_cnt.end(),0);
   Data::DataFormat format(fmt_list);
   Data::CntMethod cnt_method = Data::InLength;
   if (!parser.parseConfig(cmethod, "cnt_method"))
@@ -131,6 +132,7 @@ void TestBrick::runTest() {
   ///        2. query for all the flowkeys
   for(auto&& ptr: testPtr){
     ptr->runTest();
+    std::cout << "Counter Size: " << (width_total*ptr->getCntNum())/(8*1024) << " KB" << std::endl;
   }
   //std::cout << "overflow: " << counter.getOfNum() << std::endl;
   std::ofstream outf("tmpCnt.txt", std::ios::out);

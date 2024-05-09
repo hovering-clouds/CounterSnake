@@ -90,7 +90,7 @@ public:
   virtual size_t cntNum() const {
     static bool emit = false; // avoid burst of LOG
     if (!emit) {
-      LOG(ERROR, "Erroneously called SketchBase::size() const.");
+      LOG(ERROR, "Erroneously called SketchBase::cntNum() const.");
       emit = true;
     }
     return 0;

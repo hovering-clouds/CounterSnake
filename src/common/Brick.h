@@ -249,7 +249,7 @@ private:
   void report(int32_t layer, size_t index, T val){
     seg_idx sidx = std::make_pair(layer, index);
     report_ofl.push_back(std::make_pair(sidx, val));
-    std::cout << "report overflow at layer "<< layer << ", index "  << index << ", value " << val << std::endl;
+    //std::cout << "report overflow at layer "<< layer << ", index "  << index << ", value " << val << std::endl;
   }
   /**
    * @brief Query a counter and its layer, should be used offline in `decode`
