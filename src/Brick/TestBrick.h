@@ -76,21 +76,24 @@ void TestBrick::initPtr(toml::array& sketch_list,
 void TestBrick::runTest() {
   srand(20240228);
   /// step i: parse ACS param
+  size_t group_num;
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;
-  std::vector<size_t> no_cnt, width_cnt;
+  std::vector<size_t> dway, width_cnt;
   Util::ConfigParser parser(config_file);
   if (!parser.succeed()) {
     return;
   }
   parser.setWorkingNode(BRICK_CONFIG_PATH);
+  if (!parser.parseConfig(group_num, "group_num"))
+    return;
   if (!parser.parseConfig(data_file, "data"))
     return;
   if (!parser.parseConfig(sketch_list, "sketch"))
     return;
   if (!parser.parseConfig(fmt_list, "format"))
     return;
-  if (!parser.parseConfig(no_cnt, "no_cnt"))
+  if (!parser.parseConfig(dway, "dway"))
     return;
   if (!parser.parseConfig(width_cnt, "width_cnt"))
     return;
@@ -115,7 +118,7 @@ void TestBrick::runTest() {
     ptr->initPtr(counter_num, counter, parser);
     counter_num += ptr->getCntNum();
   }
-  counter.initBucket(counter_num, no_cnt, width_cnt);
+  counter.initBucket(counter_num, group_num, dway, width_cnt);
   for(auto&& ptr: testPtr){
     ptr->doUpdate();
   }
@@ -129,13 +132,15 @@ void TestBrick::runTest() {
   for(auto&& ptr: testPtr){
     ptr->runTest();
   }
-  std::cout << "overflow: " << counter.getOfNum() << std::endl;
+  //std::cout << "overflow: " << counter.getOfNum() << std::endl;
   std::ofstream outf("tmpCnt.txt", std::ios::out);
   std::ofstream outf2("tmpOri.txt", std::ios::out);
   std::ofstream outf3("tmpFree.txt", std::ios::out);
+  std::ofstream outf4("tmpOfIdx.txt", std::ios::out);
   counter.dumpCnt(outf);
   counter.dumpOri(outf2);
   counter.dumpFreeCnt(outf3);
+  counter.dumpOfIdx(outf4);
   counter.validate();
   return;
 }

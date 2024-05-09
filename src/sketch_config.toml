@@ -52,9 +52,10 @@
     sketch = ["CM", "HP", "DT", "FR"]
     data = "../data/data-100K.bin"
     cnt_method = "InPacket"
+    group_num = 64;
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [8, 4, 4]
-    no_cnt = [63, 12, 2]
+    dway = [8, 8, 8]
 
   [Brick.CM]
     [Brick.CM.para]
