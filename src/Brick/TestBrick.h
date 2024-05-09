@@ -13,6 +13,7 @@
 #include <sketch_test/BrickHashPipeTest.h>
 #include <sketch_test/BrickFlowRadarTest.h>
 #include <sketch_test/BrickDeltoidTest.h>
+#include <sketch_test/BrickPRTest.h>
 
 #define BRICK_CONFIG_PATH "Brick.config"
 
@@ -64,9 +65,11 @@ void TestBrick::initPtr(toml::array& sketch_list,
     } else if(str.compare("FR")==0){ // FlowRadar
       testPtr.push_back(std::make_unique<BrickFlowRadarTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } else if(str.compare("HP")==0){ //HashPipe
-    testPtr.push_back(std::make_unique<BrickHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<BrickHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } else if(str.compare("DT")==0){ //Deltoid
       testPtr.push_back(std::make_unique<BrickDeltoidTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+    } else if(str.compare("PR")==0){ //PR sketch
+      testPtr.push_back(std::make_unique<BrickPRTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } //else if(str.compare("CMH")==0){ //CMHeap
     //  testPtr.push_back(std::make_unique<ACSCMHeapTest<KEYLEN, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     //}
