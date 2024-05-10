@@ -195,8 +195,6 @@ void PRSketch<key_len, T, hash_t>::recover(){
   std::vector<double> recorded_b(counter_length);
   for(int i = 0; i < counter_length; i++)
   {
-    std::cout << counter[i] << ' ';
-    if((i+1)%64==0){std::cout << std::endl;}
     recorded_b[i] = (double)counter[i];
   }
   Eigen::VectorXd X(key_num),

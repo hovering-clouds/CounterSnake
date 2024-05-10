@@ -90,8 +90,14 @@ BrickElasticSketch<key_len, no_layer, T, hash_t>::BrickElasticSketch(int32_t num
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 size_t BrickElasticSketch<key_len, no_layer, T, hash_t>::size() const {
+  std::vector<size_t> idxs(num_buckets_*num_per_bucket_);
+  for(size_t i = 0;i < num_buckets_*num_per_bucket_;++i){
+    idxs[i]=i+offset;
+  }
   return sizeof(*this) 
-         + (key_len + sizeof(T) + 0.125) * num_buckets_ * num_per_bucket_ 
+         + (key_len + 0.125) * num_buckets_ * num_per_bucket_
+         + counter.rsize()*(cntNum())/(8*counter.getcNum())
+         + counter.csize(idxs)/8
          + cm_.size();
 }
 

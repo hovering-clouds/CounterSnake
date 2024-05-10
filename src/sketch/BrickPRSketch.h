@@ -243,7 +243,12 @@ Data::Estimation<key_len, T> BrickPRSketch<key_len, no_layer, T, hash_t>::decode
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 size_t BrickPRSketch<key_len, no_layer, T, hash_t>::size() const{
-    return counter_length * sizeof(T)
+  std::vector<size_t> idxs(counter_length);
+    for(size_t i = 0;i < counter_length;++i){
+      idxs[i]=i+offset;
+    }
+    return counter.rsize()*(cntNum())/(8*counter.getcNum())
+           + counter.csize(idxs)/8
            + (filter_length >> 3)
            + (counter_hash_num + filter_hash_num) * sizeof(hash_t)
            + sizeof(*this);
