@@ -106,6 +106,7 @@ add_user_sketch(FR FlowRadar)
 add_user_sketch(HP HashPipe)
 add_user_sketch(DT Deltoid)
 add_user_sketch(PR PRSketch)
+add_user_sketch(ES ElasticSketch)
 
 # Additive Counter Sharing
 add_executable(Brick ${CMAKE_CURRENT_SOURCE_DIR}/src/Brick/TestBrick.cpp)

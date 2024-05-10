@@ -49,7 +49,7 @@
 [Brick] # Brick
   
   [Brick.config]
-    sketch = ["CM", "HP", "DT", "FR", "PR"]
+    sketch = ["CM", "ES"]
     data = "../data/data-100K.bin"
     cnt_method = "InPacket"
     group_num = 64
@@ -128,6 +128,16 @@
       update = ["RATE"]
       decode = ["TIME", "ARE", "AAE", "RATIO", "RCD", "PODF"]
       decode_podf = 0.01
+  
+  [Brick.ES]
+    [Brick.ES.para]
+      num_buckets = 800
+      num_per_bucket = 1
+      l_depth = 3
+      l_width = 90001
+    [Brick.ES.test]
+      update = ["RATE"]
+      query = ["RATE", "ARE", "AAE"]
 
 [HP] # Hash Pipe
 
@@ -224,3 +234,20 @@
   update = ["RATE"]
   query = ["ARE", "AAE", "PODF", "RCD"]
   query_podf = 0.01
+
+[ES] # Elastic Sketch
+
+  [ES.para]
+  num_buckets = 800
+  num_per_bucket = 1
+  l_depth = 3
+  l_width = 90001
+
+  [ES.data]
+  cnt_method = "InPacket"
+  data = "../data/data-100K.bin"
+  format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+
+  [ES.test]
+  update = ["RATE"]
+  query = ["RATE", "ARE", "AAE"]

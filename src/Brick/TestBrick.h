@@ -14,6 +14,7 @@
 #include <sketch_test/BrickFlowRadarTest.h>
 #include <sketch_test/BrickDeltoidTest.h>
 #include <sketch_test/BrickPRTest.h>
+#include <sketch_test/BrickESTest.h>
 
 #define BRICK_CONFIG_PATH "Brick.config"
 
@@ -70,6 +71,8 @@ void TestBrick::initPtr(toml::array& sketch_list,
       testPtr.push_back(std::make_unique<BrickDeltoidTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } else if(str.compare("PR")==0){ //PR sketch
       testPtr.push_back(std::make_unique<BrickPRTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+    } else if(str.compare("ES")==0){ //Elastic sketch
+      testPtr.push_back(std::make_unique<BrickESTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } //else if(str.compare("CMH")==0){ //CMHeap
     //  testPtr.push_back(std::make_unique<ACSCMHeapTest<KEYLEN, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     //}
