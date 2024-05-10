@@ -108,6 +108,7 @@ add_user_sketch(DT Deltoid)
 add_user_sketch(PR PRSketch)
 add_user_sketch(ES ElasticSketch)
 add_user_sketch(MV MVSketch)
+add_user_sketch(SL SketchLearn)
 
 # Additive Counter Sharing
 add_executable(Brick ${CMAKE_CURRENT_SOURCE_DIR}/src/Brick/TestBrick.cpp)

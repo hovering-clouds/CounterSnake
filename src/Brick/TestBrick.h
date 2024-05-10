@@ -16,6 +16,7 @@
 #include <sketch_test/BrickPRTest.h>
 #include <sketch_test/BrickESTest.h>
 #include <sketch_test/BrickMVTest.h>
+#include <sketch_test/BrickSLTest.h>
 
 #define BRICK_CONFIG_PATH "Brick.config"
 
@@ -76,6 +77,8 @@ void TestBrick::initPtr(toml::array& sketch_list,
       testPtr.push_back(std::make_unique<BrickESTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } else if(str.compare("MV")==0){ //MV sketch
       testPtr.push_back(std::make_unique<BrickMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+    } else if(str.compare("SL")==0){ //SketchLearn
+      testPtr.push_back(std::make_unique<BrickSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     } //else if(str.compare("CMH")==0){ //CMHeap
     //  testPtr.push_back(std::make_unique<ACSCMHeapTest<KEYLEN, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     //}
@@ -141,7 +144,7 @@ void TestBrick::runTest() {
   ///        2. query for all the flowkeys
   for(auto&& ptr: testPtr){
     ptr->runTest();
-    std::cout << "Counter Size: " << (width_total*ptr->getCntNum())/(8*1024) << " KB" << std::endl;
+    std::cout << "Original Counter Size: " << (width_total*ptr->getCntNum())/(8*1024) << " KB" << std::endl;
   }
   //std::cout << "overflow: " << counter.getOfNum() << std::endl;
   std::ofstream outf("tmpCnt.txt", std::ios::out);
