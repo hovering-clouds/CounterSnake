@@ -49,13 +49,13 @@
 [Brick] # Brick
   
   [Brick.config]
-    sketch = ["SL"]
+    sketch = ["DT"]
     data = "../data/data-100K.bin"
     cnt_method = "InPacket"
     group_num = 64
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [8, 4, 4]
-    dway = [0, 8, 8]
+    dway = [0, 64, 64]
 
   [Brick.CM]
     [Brick.CM.para]
@@ -108,10 +108,10 @@
   [Brick.DT]
     [Brick.DT.para]
       num_hash = 2
-      num_group = 2500
+      num_group = 3000
     [Brick.DT.data]
-      hx_method = "Percentile"
-      threshold_heavy_hitter = 0.0009173226287898038
+      hx_method = "TopK"
+      threshold_heavy_hitter = 500
     [Brick.DT.test]
       update = ["RATE"]
       query = ["RATE", "ARE", "AAE"]
@@ -119,9 +119,9 @@
   
   [Brick.PR]
     [Brick.PR.para]
-      counter_length = 150000
+      counter_length = 160000
       counter_hash_num = 3
-      filter_length = 2548000
+      filter_length = 1548000
       filter_hash_num = 3
       phi = 10
     [Brick.PR.test]
@@ -153,7 +153,7 @@
 
   [Brick.SL]
     [Brick.SL.para]
-      depth = 1
+      depth = 2
       width = 3000
     [Brick.SL.data]
       hx_method = "TopK"
@@ -162,6 +162,8 @@
       update = ["RATE"]
       query = ["RATE", "ARE", "AAE"]
       heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
+
+
 
 [HP] # Hash Pipe
 
@@ -205,11 +207,11 @@
 
   [DT.para]
   num_hash = 2
-  num_group = 2500
+  num_group = 3000
 
   [DT.data]
-  hx_method = "Percentile"
-  threshold_heavy_hitter = 0.0009173226287898038
+  hx_method = "TopK"
+  threshold_heavy_hitter = 500
   cnt_method = "InPacket"
   data = "../data/data-100K.bin"
   format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
@@ -243,9 +245,9 @@
 [PR] # PR Sketch
 
   [PR.para]
-  counter_length = 150000
+  counter_length = 160000
   counter_hash_num = 3
-  filter_length = 2548000
+  filter_length = 1548000
   filter_hash_num = 3
   phi = 10
 
@@ -297,7 +299,7 @@
 [SL] # Sketch Learn
  
   [SL.para]
-  depth = 1
+  depth = 2
   width = 3000
  
   [SL.data]
