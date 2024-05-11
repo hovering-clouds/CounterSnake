@@ -187,7 +187,7 @@ template <int32_t key_len, typename T, typename hash_t>
 size_t HashPipe<key_len, T, hash_t>::size() const {
   return sizeof(*this)                    // instance
          + sizeof(hash_t) * depth         // hashing class
-         + sizeof(Entry) * depth * width; // slots
+         + (key_len+sizeof(T)) * depth * width; // slots
 }
 
 template <int32_t key_len, typename T, typename hash_t>
