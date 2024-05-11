@@ -256,7 +256,7 @@ public:
   size_t cntNum() const override;
 
   size_t getIdx(int32_t l_, int32_t r_, int32_t c_){
-    return l_*r*(c+1) + r_*(c+1) + c_;
+    return l_*r*(c+1) + r_*(c+1) + c_ + offset;
   }
 
   void clear();

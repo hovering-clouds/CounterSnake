@@ -527,6 +527,18 @@ void Brick<no_layer, T>::initBucket( size_t counter_num,
   gNum = group_num;
   rsz = 0;
   di = dway;
+  if (di.size() != no_layer) {
+    throw std::invalid_argument(
+        "Invalid Argument: `dway` should be of size " +
+        std::to_string(no_layer) + ", but got size " +
+        std::to_string(di.size()) + ".");
+  }
+  for (size_t i = 1;i<di.size();++i) {
+    if (di[i] == 0) {
+      throw std::invalid_argument(
+          "Invalid Argument: There is a zero in `dway`.");
+    }
+  }
   // initialize permutation seeds
   int32_t candidate = 31;
   int32_t cNum32 = static_cast<int32_t>(cNum);
