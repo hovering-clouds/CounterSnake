@@ -100,7 +100,7 @@
       width = 8222
     [Brick.HP.data]
       hx_method = "TopK"
-      threshold_heavy_hitter = 1000
+      threshold_heavy_hitter = 6000
     [Brick.HP.test]
       update = ["RATE"]
       heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
@@ -119,7 +119,7 @@
   
   [Brick.PR]
     [Brick.PR.para]
-      counter_length = 160000
+      counter_length = 180000
       counter_hash_num = 3
       filter_length = 1548000
       filter_hash_num = 3
@@ -173,7 +173,7 @@
 
   [HP.data]
   hx_method = "TopK"
-  threshold_heavy_hitter = 1000
+  threshold_heavy_hitter = 6000
   cnt_method = "InPacket"
   data = "../data/data-100K.bin"
   format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
@@ -245,7 +245,7 @@
 [PR] # PR Sketch
 
   [PR.para]
-  counter_length = 160000
+  counter_length = 180000
   counter_hash_num = 3
   filter_length = 1548000
   filter_hash_num = 3
