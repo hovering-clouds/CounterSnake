@@ -1,0 +1,6 @@
+Original: 937 KB
+Layer = 2: 490 KB
+Layer = 3: 309 KB
+Layer = 4: 256 KB
+Layer = 5: 201 KB
+Layer = 6: 176 KB

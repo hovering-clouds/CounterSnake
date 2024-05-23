@@ -1,0 +1,88 @@
+============  Brick CM Sketch   ============
+  Mem Footprint: 388.313 kB
+    Update Rate: 7.48807 Mpac/s
+     Query Rate: 46.5762 Mpac/s
+      Query ARE: 0.196182
+      Query AAE: 0.305083
+============================================
+Original Counter Size: 1406 KB
+============  Brick Flow Radar  ============
+  Mem Footprint: 2.35275 MB
+    Update Rate: 508.246 Kpac/s
+    Decode Time: 754.232 ms
+     Decode ARE: 0
+     Decode AAE: 0
+     Decode Acc: 100%
+    Decode <=1%: 100%
+   Decode Ratio: 100%
+============================================
+Original Counter Size: 1113 KB
+============  Brick Hash Pipe   ============
+  Mem Footprint: 1.66136 MB
+    Update Rate: 1.67995 Mpac/s
+        HH Time: 250.433 ms
+         HH ARE: 1.18588e-05
+        HH Prec: 99.9001%
+         HH RCL: 100%
+          HH F1: 0.9995
+============================================
+Original Counter Size: 482 KB
+============   Brick Deltoid    ============
+  Mem Footprint: 1.1139 MB
+    Update Rate: 117.69 Kpac/s
+        HH Time: 18.026 ms
+         HH ARE: 0.0107268
+        HH Prec: 95.8167%
+         HH RCL: 96.2%
+          HH F1: 0.96008
+============================================
+Original Counter Size: 3697 KB
+============  Brick PR Sketch   ============
+  Mem Footprint: 363.41 kB
+    Update Rate: 2.75318 Mpac/s
+    Decode Time: 6.93115 s
+     Decode ARE: 0.249383
+     Decode AAE: 0.419523
+    Decode <=1%: 72.4925%
+   Decode Ratio: 99.483%
+============================================
+Original Counter Size: 625 KB
+============  Brick ES Sketch   ============
+  Mem Footprint: 450.08 kB
+    Update Rate: 5.20918 Mpac/s
+     Query Rate: 86.4296 Mpac/s
+      Query ARE: 0.192726
+      Query AAE: 0.341383
+============================================
+Original Counter Size: 1414 KB
+============   Brick MVSketch   ============
+  Mem Footprint: 614.076 kB
+    Update Rate: 8.82381 Mpac/s
+     Query Rate: 939.796 Kpac/s
+      Query ARE: 2.33299
+      Query AAE: 3.38546
+        HH Time: 26.05 ms
+         HH ARE: 0.0112645
+        HH Prec: 97.7049%
+         HH RCL: 99.3333%
+          HH F1: 0.985124
+============================================
+Original Counter Size: 321 KB
+LEARNING START!
+
+DECODE COST 1001087ms
+LEARNING END!
+============ Brick SketchLearn  ============
+  Mem Footprint: 1.11082 MB
+    Update Rate: 107.657 Kpac/s
+     Query Rate: 6.15287 Kpac/s
+      Query ARE: 2.61063
+      Query AAE: 4.3387
+        HH Time: 1.059 ms
+         HH ARE: 0.0195065
+        HH Prec: 98.3871%
+         HH RCL: 97.6%
+          HH F1: 0.97992
+============================================
+Original Counter Size: 3697 KB
+#Inconsistency: 3

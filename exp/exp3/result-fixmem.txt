@@ -1,0 +1,31 @@
+CM:
+  w/ ARE: 0.196
+  w/o ARE: 1.23
+
+FR:(set ARE=1 for flows that can't be decoded)
+  w/ ARE: 0
+  w/o ARE: 0.778
+
+HP:
+  w/ F1: 0.988
+  w/o F1: 0.900
+
+DT:
+  w/ F1: 0.667
+  w/o F1: 0.960
+
+PR:
+  w/ ARE: 0.249
+  w/o ARE: 2.50
+
+ES:
+  w/ ARE: 0.193
+  w/o ARE: 0.984
+
+MV:
+  w/ F1: 0.985
+  w/o F1: 0.909
+
+SL:
+  w/ F1: 0.980
+  w/o F1: 0.615

@@ -1,0 +1,87 @@
+CM w/B
+  Mem: 250KB
+  CNT: 937KB
+  ARE：0.490
+CM w/o B
+  Mem: 938KB
+  ARE: 0.483
+
+FR w/B
+  Mem: 2341KB
+  CNT: 1113KB
+  ARE: 0
+FR w/o B
+  Mem: 3139KB
+  ARE: 0
+
+HP w/B
+  Mem: 1656KB
+  CNT: 482KB
+  HHARE: 2.40e-5
+  HHPrec: 96.9%
+  HHRCL: 100%
+  F1: 0.984
+HP w/o B
+  Mem: 2002KB
+  HHARE: 2.88e-5
+  HHPrec: 96.9%
+  HHRCL: 100%
+  F1: 0.984
+
+DT w/B
+  Mem: 798KB
+  CNT: 2461KB
+  HHARE: 2.17e-2
+  HHPrec: 93.0%
+  HHRCL: 91.0%
+  F1: 0.920
+DT w/o B
+  Mem: 2404KB
+  HHARE: 2.27e-2
+  HHPrec: 92.8%
+  HHRCL: 87.8%
+  F1: 0.902
+
+PR w/B
+  Mem: 357KB
+  CNT: 625KB
+  ARE: 0.0879
+PR w/o B
+  Mem: 892KB
+  ARE: 0.0705
+
+ES w/B
+  Mem: 317KB
+  CNT: 1061KB
+  ARE: 0.368
+ES w/o B
+  Mem: 1057KB
+  ARE: 0.376
+
+MV w/B
+  Mem: 434KB
+  CNT: 227KB
+  HHARE: 2.07e-2
+  HHPrec: 95.9%
+  HHRCL: 97.9%
+  F1: 0.969
+MV w/o B
+  Mem: 597KB
+  HHARE: 1.20e-2
+  HHPrec: 95.6%
+  HHRCL: 98.0%
+  F1: 0.968
+
+SL w/B
+  Mem: 779KB
+  CNT: 2462KB
+  HHARE: 2.85e-2
+  HHPrec: 98.4%
+  HHRCL: 89.7%
+  F1: 0.938
+SL w/o B
+  Mem: 2405KB
+  HHARE: 2.90e-2
+  HHPrec: 98.2%
+  HHRCL: 90.7%
+  F1: 0.943
