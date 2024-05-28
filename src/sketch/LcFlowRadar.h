@@ -1,5 +1,5 @@
 /**
- * @file BrickFlowRadar.h
+ * @file LcFlowRadar.h
  * @author dromniscience (you@domain.com)
  * @brief FlowRadar with counter sharing
  *
@@ -9,7 +9,7 @@
 #pragma once
 
 #include <common/hash.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 #include <sketch/BloomFilter.h>
 
 namespace OmniSketch::Sketch {
@@ -25,7 +25,7 @@ namespace OmniSketch::Sketch {
  * @tparam hash_t   hashing class
  */
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
-class BrickFlowRadar : public SketchBase<key_len, T> {
+class LcFlowRadar : public SketchBase<key_len, T> {
 private:
   struct CountTableEntry {
     FlowKey<key_len> flowXOR;
@@ -44,10 +44,10 @@ private:
   hash_t *hash_fns;
   BloomFilter<key_len, hash_t> *flow_filter;
   FlowKey<key_len>* flow_xor;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
 
-  BrickFlowRadar(const BrickFlowRadar &) = delete;
-  BrickFlowRadar(BrickFlowRadar &&) = delete;
+  LcFlowRadar(const LcFlowRadar &) = delete;
+  LcFlowRadar(LcFlowRadar &&) = delete;
 
 public:
   /**
@@ -59,13 +59,13 @@ public:
    * @param count_table_hash Number of hash functions in count table
    * @param counter shared counter array
    */
-  BrickFlowRadar(int32_t flow_filter_size, int32_t flow_filter_hash, int32_t count_table_size, 
-            int32_t count_table_hash, int32_t offset_, Counter::Brick<no_layer, T>& counter_);
+  LcFlowRadar(int32_t flow_filter_size, int32_t flow_filter_hash, int32_t count_table_size, 
+            int32_t count_table_hash, int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_);
   /**
    * @brief Destructor
    *
    */
-  ~BrickFlowRadar();
+  ~LcFlowRadar();
   /**
    * @brief Update a flowkey with a certain value
    *
@@ -100,12 +100,12 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickFlowRadar<key_len, no_layer, T, hash_t>::BrickFlowRadar(int32_t flow_filter_size,
+LcFlowRadar<key_len, no_layer, T, hash_t>::LcFlowRadar(int32_t flow_filter_size,
                                          int32_t flow_filter_hash,
                                          int32_t count_table_size,
                                          int32_t count_table_hash,
                                          int32_t offset_,
-                                         Counter::Brick<no_layer, T>& counter_)
+                                         Counter::LayerCounter<no_layer, T>& counter_)
     : num_bitmap(Util::NextPrime(flow_filter_size)),
       num_bit_hash(flow_filter_hash), num_flows(0),
       num_count_table(Util::NextPrime(count_table_size)),
@@ -118,14 +118,14 @@ BrickFlowRadar<key_len, no_layer, T, hash_t>::BrickFlowRadar(int32_t flow_filter
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickFlowRadar<key_len, no_layer, T, hash_t>::~BrickFlowRadar() {
+LcFlowRadar<key_len, no_layer, T, hash_t>::~LcFlowRadar() {
   delete[] hash_fns;
   delete flow_filter;
   delete[] flow_xor;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickFlowRadar<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+void LcFlowRadar<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                            T val) {
   bool exist = flow_filter->lookup(flowkey);
   // a new flow
@@ -147,7 +147,7 @@ void BrickFlowRadar<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len>
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-Data::Estimation<key_len, T> BrickFlowRadar<key_len, no_layer, T, hash_t>::decode() {
+Data::Estimation<key_len, T> LcFlowRadar<key_len, no_layer, T, hash_t>::decode() {
   CountTableEntry* count_table = new CountTableEntry[num_count_table]();
   for(int32_t i = 0; i < num_count_table; ++i){
     count_table[i].flowXOR = flow_xor[i];
@@ -200,7 +200,7 @@ Data::Estimation<key_len, T> BrickFlowRadar<key_len, no_layer, T, hash_t>::decod
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickFlowRadar<key_len, no_layer, T, hash_t>::size() const {
+size_t LcFlowRadar<key_len, no_layer, T, hash_t>::size() const {
   std::vector<size_t> idxs(2*num_count_table);
   for(size_t i = 0;i<2*num_count_table;++i){
     idxs[i]=i+offset;
@@ -208,18 +208,17 @@ size_t BrickFlowRadar<key_len, no_layer, T, hash_t>::size() const {
   return sizeof(*this)                                 // instance
          + num_count_hash * sizeof(hash_t)             // hashing class
          + num_count_table * key_len                   // flow_xor
-         + counter.rsize()*cntNum()/(8*counter.getcNum())
          + counter.csize(idxs)/8                       // counter size
          + flow_filter->size();                        // flow filter
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickFlowRadar<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcFlowRadar<key_len, no_layer, T, hash_t>::cntNum() const {
   return 2*num_count_table;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickFlowRadar<key_len, no_layer, T, hash_t>::clear() {
+void LcFlowRadar<key_len, no_layer, T, hash_t>::clear() {
   // reset flow counter
   num_flows = 0;
   // reset flow filter

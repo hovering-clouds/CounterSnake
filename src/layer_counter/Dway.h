@@ -1,32 +1,34 @@
 /**
- * @file Brick.h
+ * @file Dway.h
  * @author hc (you@domain.com)
- * @brief Counter type for counter layer sharing
+ * @brief Counter type for d-way counter layer sharing
  *
  * @copyright Copyright (c) 2024
  *
  */
 #pragma once
 
-#define DEBUG_BRICK
-#include "utils.h"
+#define DEBUG_DWAY
+#include <common/utils.h>
+#include <common/layer.h>
 #include <numeric>
 #include <vector>
 #include <set>
-#define BTAG_INVALID 0
-typedef unsigned short btag_t;
+#include <iostream>
+#define DTAG_INVALID 0
+typedef unsigned short dtag_t;
 
 namespace OmniSketch::Counter{
 
 /**
- * @brief Buckets used in Brick. One Bucket holds layers of counters
+ * @brief Counter layers used in Dway
  * 
  * @tparam no_layer Number of Layers
  * @tparam T Counter Type (which should be numerical types)
  */
 template <int32_t no_layer, typename T>
-class Bucket{
-#ifdef TEST_BRICK
+class DwayCntLayer{
+#ifdef TEST_DWAY
 public:
 #else
 private:
@@ -50,7 +52,7 @@ private:
    * @brief Each tag in this array corresponds to a segment
    *
    */
-  std::vector<btag_t> tag_array[no_layer];
+  std::vector<dtag_t> tag_array[no_layer];
 
 public:
   /**
@@ -71,12 +73,12 @@ public:
    * - Sum of `width_cnt` exceeds `sizeof(T) * 8`. This constraint is imposed to
    * guarantee proper shifting of counters when decoding.
    */
-  Bucket(const std::vector<size_t> &no_cnt, const std::vector<size_t> &width_cnt);
+  DwayCntLayer(const std::vector<size_t> &no_cnt, const std::vector<size_t> &width_cnt);
   /**
    * @brief Destructor
    *
    */
-  ~Bucket(){
+  ~DwayCntLayer(){
   }
   /**
    * @brief Update a segment
@@ -117,7 +119,7 @@ public:
    * @param index The index of the tag in that layer
    * @param tag The tag value
    */
-  void setTag(const int32_t layer, const size_t index, const btag_t tag){
+  void setTag(const int32_t layer, const size_t index, const dtag_t tag){
     tag_array[layer][index] = tag;
   }
   /**
@@ -128,7 +130,7 @@ public:
    * 
    * @return The tag value
    */
-  btag_t getTag(const int32_t layer, const size_t index){
+  dtag_t getTag(const int32_t layer, const size_t index){
     return tag_array[layer][index];
   }
   /**
@@ -171,8 +173,8 @@ public:
  * @tparam T Inner counter type (which should be numerical types).
  */
 template <int32_t no_layer, typename T>
-class Brick {
-#ifdef TEST_BRICK
+class Dway : public LayerCounter<no_layer, T> {
+#ifdef TEST_DWAY
 public:
 #else
 private:
@@ -209,7 +211,7 @@ private:
    * @brief Buckets used to store the counters
    * 
    */
-  std::unique_ptr<Bucket<no_layer, T>> bucket_ptr;
+  std::unique_ptr<DwayCntLayer<no_layer, T>> cnt_ptr;
   /**
    * @brief The number of shared segments in each layer
    *
@@ -238,8 +240,8 @@ private:
    */
   std::vector<std::pair<seg_idx, T>> report_ofl;
 
-  Brick(const Brick &) = delete;
-  Brick(Brick &&) = delete;
+  Dway(const Dway &) = delete;
+  Dway(Dway &&) = delete;
   /**
    * @brief Report overflow to control plane
    * 
@@ -267,32 +269,32 @@ public:
    * @param width_cnt Counter width of each layer.
    * 
    */
-  Brick(size_t counter_num, size_t group_num, const std::vector<size_t> &dway,
+  Dway(size_t counter_num, size_t group_num, const std::vector<size_t> &dway,
         const std::vector<size_t> &width_cnt){
-    initBucket(counter_num, group_num, dway, width_cnt);
+    initCounter(counter_num, group_num, dway, width_cnt);
   }
 
   /**
    * @brief Construct without initialize Buckets, need to initialize later. 
    * 
    */
-  Brick(){}
+  Dway(){}
   
   /**
-   * @brief Release Bricks
+   * @brief Release Dway Counters
    * 
    */
-  ~Brick(){}
+  ~Dway(){}
 
   /**
-   * @brief Initialize Buckets
+   * @brief Initialize Counter array
    * 
    * @param counter_num Number of counters you wish to use.
    * @param dway Number shared segments in each layer.
    * @param width_cnt Counter width of each layer.
    * 
    */
-  void initBucket(size_t counter_num, size_t group_num,
+  void initCounter(size_t counter_num, size_t group_num,
       const std::vector<size_t> &dway, const std::vector<size_t> &width_cnt);
 
   /**
@@ -301,20 +303,20 @@ public:
    * @param ori_index Counter index
    * @param val Value to be added
    */
-  void update(size_t ori_index, T val);
+  void update(size_t ori_index, T val) override;
   /**
    * @brief Query a counter online
    * 
    * @param ori_index Counter index
    * @return The counter value
    */
-  T query(size_t ori_index);
+  T query(size_t ori_index) override;
   /**
    * @brief Reset the counter, will clear the tag
    * 
    * @param ori_index Counter index
    */
-  void clear_cnt(size_t ori_index);
+  void clear_cnt(size_t ori_index) override;
 
   /**
    * @brief Decode all the counters into `decode_cnt` and their sizes into `cnt_size`.
@@ -329,7 +331,7 @@ public:
    * @param ori_index Counter index
    * @return The counter value
    */
-  T getCnt(size_t ori_index) const{
+  T getCnt(size_t ori_index) const override{
     return decoded_cnt.at(ori_index);
   }
 
@@ -358,7 +360,7 @@ public:
    * @brief Get the memory usage of the given counters, return in bits
    * 
    */
-  size_t csize(const std::vector<size_t>& idxs) const;
+  size_t csize(const std::vector<size_t>& idxs) const override;
   /**
    * @brief Get the redundant memory in bits. (Size of unused higher-layer counters and status-arrays)
    * 
@@ -415,17 +417,18 @@ public:
     size_t num = 0;
     for (size_t i = 0; i < cNum; i++){
       if(original_cnt[i]!=decoded_cnt[i]){
+        //std::cout << i << ' ' << original_cnt[i] << ' ' << decoded_cnt[i] << std::endl;
         num++;
       }
     }
-    std::cout << "#Inconsistency: " << num << std::endl;
+    std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
   }
   /**
    * @brief Clear the counters
    * 
    */
   void clear(){
-    bucket_ptr->clearAll();
+    cnt_ptr->clearAll();
     std::fill_n(original_cnt.begin(), cNum, 0);
     rsz = 0;
   }
@@ -435,7 +438,7 @@ public:
 namespace OmniSketch::Counter {
 
 template <int32_t no_layer, typename T>
-Bucket<no_layer, T>::Bucket(
+DwayCntLayer<no_layer, T>::DwayCntLayer(
       const std::vector<size_t> &no_cnt,
       const std::vector<size_t> &width_cnt)
       : no_cnt(no_cnt), width_cnt(width_cnt){
@@ -483,34 +486,34 @@ Bucket<no_layer, T>::Bucket(
   }
   for (int32_t i = 1; i < no_layer; ++i) {
     // initialize status_array of layer i with number of counters in layer i-1
-    tag_array[i] = std::vector<btag_t>(no_cnt[i], BTAG_INVALID);
+    tag_array[i] = std::vector<dtag_t>(no_cnt[i], DTAG_INVALID);
   }
 }
 
 template <int32_t no_layer, typename T>
-size_t Bucket<no_layer, T>::getUnusedNum(int32_t layer) const{
+size_t DwayCntLayer<no_layer, T>::getUnusedNum(int32_t layer) const{
   if(layer==0){return 0;}
   size_t result = 0;
   for(auto idx:tag_array[layer]){
-    if(idx==BTAG_INVALID){result++;}
+    if(idx==DTAG_INVALID){result++;}
   }
   return result;
 }
 
 template <int32_t no_layer, typename T>
-void Bucket<no_layer, T>::clearAll(){
+void DwayCntLayer<no_layer, T>::clearAll(){
   for (int32_t lr = 0;lr<no_layer;++lr){
     for (auto& seg:cnt_array[lr]){
       seg.reset();
     }
   }
   for (int32_t lr = 1;lr<no_layer;++lr){
-    std::fill_n(tag_array[lr].begin(), no_cnt[lr], BTAG_INVALID);
+    std::fill_n(tag_array[lr].begin(), no_cnt[lr], DTAG_INVALID);
   }
 }
 
 template <int32_t no_layer, typename T>
-size_t Bucket<no_layer, T>::bits_num(size_t tag_len) const{
+size_t DwayCntLayer<no_layer, T>::bits_num(size_t tag_len) const{
   size_t bits = no_cnt[0]*width_cnt[0];
   for(int32_t lr = 1; lr<no_layer; ++lr){
     bits+=no_cnt[lr]*(width_cnt[lr]+tag_len);
@@ -520,7 +523,7 @@ size_t Bucket<no_layer, T>::bits_num(size_t tag_len) const{
 
 
 template <int32_t no_layer, typename T>
-void Brick<no_layer, T>::initBucket( size_t counter_num,
+void Dway<no_layer, T>::initCounter( size_t counter_num,
     size_t group_num, const std::vector<size_t> &dway,
     const std::vector<size_t> &width_cnt){
   cNum = counter_num;
@@ -549,14 +552,14 @@ void Brick<no_layer, T>::initBucket( size_t counter_num,
       break;
     }else{candidate++;}
   }
-  // initialize bucket_ptr
+  // initialize cnt_ptr
   std::vector<size_t> no_cnt(no_layer);
   no_cnt[0] = cNum;
   for(int32_t lr = 1;lr<no_layer;++lr){
     size_t no_grp = (no_cnt[lr-1]+gNum-1)/gNum;
     no_cnt[lr] = no_grp*di[lr];
   }
-  bucket_ptr = std::make_unique<Bucket<no_layer, T>>(no_cnt, width_cnt);
+  cnt_ptr = std::make_unique<DwayCntLayer<no_layer, T>>(no_cnt, width_cnt);
   // original counters, value initialized
   original_cnt.resize(no_cnt[0]);
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
@@ -567,11 +570,11 @@ void Brick<no_layer, T>::initBucket( size_t counter_num,
 }
 
 template <int32_t no_layer, typename T>
-void Brick<no_layer, T>::update(size_t ori_index, T val){
+void Dway<no_layer, T>::update(size_t ori_index, T val){
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
-    T of_val = bucket_ptr->updateSegment(lr, index, val);
+    T of_val = cnt_ptr->updateSegment(lr, index, val);
     //std::cout << lr << ' ' << index << ' ' <<of_val << std::endl;
     if(of_val!=0){
       if(lr==no_layer-1){ // last layer should not overflow
@@ -581,11 +584,11 @@ void Brick<no_layer, T>::update(size_t ori_index, T val){
       }
       val = of_val;
       size_t gid = index/gNum;
-      btag_t tag = gNum+(btag_t)index%gNum; // set valid bit as 1
+      dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
       bool matched = false;
       // Case 1: a matched segment
       for(size_t nextId = gid*di[lr+1]; nextId<(gid+1)*di[lr+1];++nextId){
-        if(bucket_ptr->getTag(lr+1, nextId)==tag){
+        if(cnt_ptr->getTag(lr+1, nextId)==tag){
           index = nextId;
           matched = true;
           break;
@@ -594,8 +597,8 @@ void Brick<no_layer, T>::update(size_t ori_index, T val){
       if(matched){continue;}
       // Case 2: no match, allocate a new one
       for(size_t nextId = gid*di[lr+1]; nextId<(gid+1)*di[lr+1];++nextId){
-        if(bucket_ptr->getTag(lr+1, nextId)==BTAG_INVALID){
-          bucket_ptr->setTag(lr+1, nextId, tag);
+        if(cnt_ptr->getTag(lr+1, nextId)==DTAG_INVALID){
+          cnt_ptr->setTag(lr+1, nextId, tag);
           index = nextId;
           matched = true;
           break;
@@ -610,20 +613,20 @@ void Brick<no_layer, T>::update(size_t ori_index, T val){
 }
 
 template <int32_t no_layer, typename T>
-std::pair<T, int32_t> Brick<no_layer, T>::query_with_layer(size_t ori_index){
+std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
-  size_t cur_bits = bucket_ptr->getWidth(0);
-  T result = bucket_ptr->getSegment(0, index);
+  size_t cur_bits = cnt_ptr->getWidth(0);
+  T result = cnt_ptr->getSegment(0, index);
   int32_t lr;
   for(lr = 1;lr<no_layer;++lr){
     size_t gid = index/gNum;
-    btag_t tag = gNum+(btag_t)index%gNum; // set valid bit as 1
+    dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
     bool matched = false;
     for(size_t nextId = gid*di[lr]; nextId<(gid+1)*di[lr];++nextId){
-      if(bucket_ptr->getTag(lr, nextId)==tag){
+      if(cnt_ptr->getTag(lr, nextId)==tag){
         index = nextId;
-        result+=bucket_ptr->getSegment(lr, index)<<cur_bits;
-        cur_bits+= bucket_ptr->getWidth(lr);
+        result+=cnt_ptr->getSegment(lr, index)<<cur_bits;
+        cur_bits+= cnt_ptr->getWidth(lr);
         matched = true;
         break;
       }
@@ -636,24 +639,24 @@ std::pair<T, int32_t> Brick<no_layer, T>::query_with_layer(size_t ori_index){
 }
 
 template <int32_t no_layer, typename T>
-T Brick<no_layer, T>::query(size_t ori_index){
+T Dway<no_layer, T>::query(size_t ori_index){
   return query_with_layer(ori_index).first;
 }
 
 template <int32_t no_layer, typename T>
-void Brick<no_layer, T>::clear_cnt(size_t ori_index){
+void Dway<no_layer, T>::clear_cnt(size_t ori_index){
   original_cnt[ori_index] = 0;
   size_t index = (ori_index*pseed)%cNum;
-  bucket_ptr->resetSegment(0, index);
+  cnt_ptr->resetSegment(0, index);
   for(int32_t lr = 1;lr<no_layer;++lr){
     size_t gid = index/gNum;
-    btag_t tag = gNum+(btag_t)index%gNum; // set valid bit as 1
+    dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
     bool matched = false;
     for(size_t nextId = gid*di[lr]; nextId<(gid+1)*di[lr];++nextId){
-      if(bucket_ptr->getTag(lr, nextId)==tag){
+      if(cnt_ptr->getTag(lr, nextId)==tag){
         index = nextId;
-        bucket_ptr->resetSegment(lr, index);
-        bucket_ptr->setTag(lr, index, BTAG_INVALID);
+        cnt_ptr->resetSegment(lr, index);
+        cnt_ptr->setTag(lr, index, DTAG_INVALID);
         matched = true;
         break;
       }
@@ -666,11 +669,11 @@ void Brick<no_layer, T>::clear_cnt(size_t ori_index){
 }
 
 template <int32_t no_layer, typename T>
-void Brick<no_layer, T>::decode(){
+void Dway<no_layer, T>::decode(){
   std::vector<size_t> accum_bits(no_layer);
-  accum_bits[0] = bucket_ptr->getWidth(0);
+  accum_bits[0] = cnt_ptr->getWidth(0);
   for(int32_t lr=1;lr<no_layer;++lr){
-    accum_bits[lr] = accum_bits[lr-1]+bucket_ptr->getWidth(lr);
+    accum_bits[lr] = accum_bits[lr-1]+cnt_ptr->getWidth(lr);
   }
   size_t tag_len = ceil(log2(gNum))+1;
   // decoded values
@@ -688,19 +691,20 @@ void Brick<no_layer, T>::decode(){
   }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
-    rsz += bucket_ptr->getUnusedNum(lr)*(bucket_ptr->getWidth(lr)+tag_len);
+    rsz += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr)+tag_len);
   }
 }
 
 template <int32_t no_layer, typename T>
-size_t Brick<no_layer, T>::bsize() const{
+size_t Dway<no_layer, T>::bsize() const{
   size_t tag_len = ceil(log2(gNum))+1;
-  return bucket_ptr->bits_num(tag_len)/8;
+  return cnt_ptr->bits_num(tag_len)/8;
 }
 
 template <int32_t no_layer, typename T>
-size_t Brick<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
-  size_t result = 0;
+size_t Dway<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
+  size_t num = idxs.size();
+  size_t result = num*rsz/cNum;
   for(auto ori_index:idxs){
     result+=cnt_size[ori_index];
   }
@@ -708,7 +712,7 @@ size_t Brick<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
 }
 
 template <int32_t no_layer, typename T>
-void Brick<no_layer, T>::dumpOfIdx(std::ostream& os) const{
+void Dway<no_layer, T>::dumpOfIdx(std::ostream& os) const{
   std::vector<size_t> ofNum(no_layer, 0);
   std::vector<std::set<size_t>> index_sets(no_layer);
   for(auto kv: report_ofl){
@@ -718,7 +722,7 @@ void Brick<no_layer, T>::dumpOfIdx(std::ostream& os) const{
   }
   for(int32_t lr = 0;lr<no_layer;++lr){
     os << "layer " << lr << " ratio: ";
-    os << index_sets[lr].size() << '/' << bucket_ptr->getCntNo(lr);
+    os << index_sets[lr].size() << '/' << cnt_ptr->getCntNo(lr);
     os << std::endl;
   }
   for(int32_t lr = 0;lr<no_layer;++lr){
@@ -731,14 +735,14 @@ void Brick<no_layer, T>::dumpOfIdx(std::ostream& os) const{
 }
 
 template <int32_t no_layer, typename T>
-void Brick<no_layer, T>::dumpFreeCnt(std::ostream& os) const{
+void Dway<no_layer, T>::dumpFreeCnt(std::ostream& os) const{
   for(int32_t lr = 0;lr<no_layer;++lr){
     os << "Unused segments in layer " << lr << ": ";
-    os << bucket_ptr->getUnusedNum(lr) << '/' << bucket_ptr->getCntNo(lr);
+    os << cnt_ptr->getUnusedNum(lr) << '/' << cnt_ptr->getCntNo(lr);
     os << std::endl;
   }
 }
 
 }// end of namespace Counter
 
-#undef DEBUG_BRICK
+#undef DEBUG_DWAY

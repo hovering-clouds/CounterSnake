@@ -1,5 +1,5 @@
 /**
- * @file BrickHashPipe.h
+ * @file LcHashPipe.h
  * @author hc (you@domain.com)
  * @brief Hash Pipe with Brick
  *
@@ -10,7 +10,7 @@
 
 #include <common/hash.h>
 #include <common/sketch.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 
 namespace OmniSketch::Sketch {
 /**
@@ -21,7 +21,7 @@ namespace OmniSketch::Sketch {
  * @tparam hash_t   hashing class
  */
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
-class BrickHashPipe : public SketchBase<key_len, T> {
+class LcHashPipe : public SketchBase<key_len, T> {
 private:
   class Entry {
   public:
@@ -32,23 +32,23 @@ private:
   int32_t offset;
   hash_t *hash_fns;
   Entry **slots;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
 
-  BrickHashPipe(const BrickHashPipe &) = delete;
-  BrickHashPipe(BrickHashPipe &&) = delete;
-  BrickHashPipe &operator=(BrickHashPipe) = delete;
+  LcHashPipe(const LcHashPipe &) = delete;
+  LcHashPipe(LcHashPipe &&) = delete;
+  LcHashPipe &operator=(LcHashPipe) = delete;
 
 public:
   /**
    * @brief Construct by specifying depth and width
    *
    */
-  BrickHashPipe(int32_t depth_, int32_t width_, int32_t offset_, Counter::Brick<no_layer, T>& counter_);
+  LcHashPipe(int32_t depth_, int32_t width_, int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_);
   /**
    * @brief Release the pointer
    *
    */
-  ~BrickHashPipe();
+  ~LcHashPipe();
   /**
    * @brief Update a flowkey with certain value
    *
@@ -89,8 +89,8 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickHashPipe<key_len, no_layer, T, hash_t>::BrickHashPipe(
-    int32_t depth_, int32_t width_,  int32_t offset_, Counter::Brick<no_layer, T>& counter_)
+LcHashPipe<key_len, no_layer, T, hash_t>::LcHashPipe(
+    int32_t depth_, int32_t width_,  int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_)
     : depth(depth_), width(Util::NextPrime(width_)), offset(offset_), counter(counter_) {
 
   hash_fns = new hash_t[depth];
@@ -103,14 +103,14 @@ BrickHashPipe<key_len, no_layer, T, hash_t>::BrickHashPipe(
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickHashPipe<key_len, no_layer, T, hash_t>::~BrickHashPipe() {
+LcHashPipe<key_len, no_layer, T, hash_t>::~LcHashPipe() {
   delete[] hash_fns;
   delete[] slots[0];
   delete[] slots;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickHashPipe<key_len, no_layer, T, hash_t>::update(
+void LcHashPipe<key_len, no_layer, T, hash_t>::update(
     const FlowKey<key_len> &flowkey,T val) {
   // The first stage
   int idx = hash_fns[0](flowkey) % width;
@@ -158,7 +158,7 @@ void BrickHashPipe<key_len, no_layer, T, hash_t>::update(
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickHashPipe<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
+T LcHashPipe<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
   T ret = 0;
   for (int i = 0; i < depth; ++i) {
     int idx = hash_fns[i](flowkey) % width;
@@ -171,7 +171,7 @@ T BrickHashPipe<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flo
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 Data::Estimation<key_len, T>
-BrickHashPipe<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
+LcHashPipe<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
   Data::Estimation<key_len, T> heavy_hitters;
   std::set<FlowKey<key_len>> checked;
   for (int i = 0; i < depth; ++i) {
@@ -191,7 +191,7 @@ BrickHashPipe<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) co
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickHashPipe<key_len, no_layer, T, hash_t>::size() const {
+size_t LcHashPipe<key_len, no_layer, T, hash_t>::size() const {
   std::vector<size_t> idxs(depth*width);
   for(size_t i = 0;i<depth*width;++i){
     idxs[i]=i+offset;
@@ -199,17 +199,16 @@ size_t BrickHashPipe<key_len, no_layer, T, hash_t>::size() const {
   return sizeof(*this)                    // instance
          + sizeof(hash_t) * depth         // hashing class
          + sizeof(Entry) * depth * width  // slots(flow_keys)
-         + counter.rsize()*(cntNum())/(8*counter.getcNum()) // redundant bits
          + counter.csize(idxs)/8;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickHashPipe<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcHashPipe<key_len, no_layer, T, hash_t>::cntNum() const {
   return depth*width;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickHashPipe<key_len, no_layer, T, hash_t>::clear() {
+void LcHashPipe<key_len, no_layer, T, hash_t>::clear() {
   FlowKey<key_len> empty_key;
   for (int i = 0; i < depth; ++i) {
     for (int j = 0; j < width; ++j) {

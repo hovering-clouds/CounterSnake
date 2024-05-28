@@ -1,5 +1,5 @@
 /**
- * @file BrickSketchLearn.h
+ * @file LcSketchLearn.h
  * @author XierLabber<yangshibo@stu.pku.edu.cn>, hc
  * @brief Sketch Learn
  *
@@ -10,7 +10,7 @@
 
 #include <common/hash.h>
 #include <common/sketch.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -27,7 +27,7 @@ namespace OmniSketch::Sketch {
  */
 template <int32_t key_len, int32_t no_layer, typename T,
           typename hash_t = Hash::AwareHash>
-class BrickSketchLearn : public SketchBase<key_len, T> {
+class LcSketchLearn : public SketchBase<key_len, T> {
 
 private:
 
@@ -100,7 +100,7 @@ private:
   hash_t* hash_function;
   T ***V;
   const int32_t offset;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
   double* p;
   double* sigma;
   bool updated;
@@ -227,12 +227,12 @@ public:
    * @brief Construct by specifying depth and width
    *
    */
-  BrickSketchLearn(int32_t depth_, int32_t width_, int32_t offset_, Counter::Brick<no_layer, T>& counter_);
+  LcSketchLearn(int32_t depth_, int32_t width_, int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_);
   /**
    * @brief Release the pointer
    *
    */
-  ~BrickSketchLearn();
+  ~LcSketchLearn();
   /**
    * @brief Update a flowkey with certain value
    *
@@ -273,7 +273,7 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-int32_t BrickSketchLearn<key_len, no_layer, T, hash_t>::get_bit(char* a, int32_t pos){
+int32_t LcSketchLearn<key_len, no_layer, T, hash_t>::get_bit(char* a, int32_t pos){
       int32_t byte = pos / 8;
       int32_t bit = pos % 8;
       if ((a[byte] & (1 << (bit))) == 0)
@@ -287,7 +287,7 @@ int32_t BrickSketchLearn<key_len, no_layer, T, hash_t>::get_bit(char* a, int32_t
     }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::set_bit(char* a, int32_t pos, int32_t v){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::set_bit(char* a, int32_t pos, int32_t v){
     int32_t byte = pos / 8;
     int32_t bit = pos % 8;
     if (v == 1)
@@ -302,7 +302,7 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::set_bit(char* a, int32_t po
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::Sketch2N_p_sigma(){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::Sketch2N_p_sigma(){
     double sum;
     double square_sum;
     double tmp_r;
@@ -334,12 +334,12 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::Sketch2N_p_sigma(){
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-double BrickSketchLearn<key_len, no_layer, T, hash_t>::normalCFD(double value){
+double LcSketchLearn<key_len, no_layer, T, hash_t>::normalCFD(double value){
     return 0.5 * erfc(-value / sqrt(2));
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::find_possible_flows
+void LcSketchLearn<key_len, no_layer, T, hash_t>::find_possible_flows
   (int32_t i, int32_t j, int32_t k, char* candidate_string){
     if (k == l + 1)
     {
@@ -377,7 +377,7 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::find_possible_flows
   }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::ExtractLargeFlows
+void LcSketchLearn<key_len, no_layer, T, hash_t>::ExtractLargeFlows
   (double theta, int32_t i, int32_t j,T*** V, double* p, double* sigma){
     
     extracted_large_flows.clear();
@@ -494,7 +494,7 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::ExtractLargeFlows
   }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-double BrickSketchLearn<key_len, no_layer, T, hash_t>::cal_hat_p
+double LcSketchLearn<key_len, no_layer, T, hash_t>::cal_hat_p
   (double theta, int32_t i, int32_t j, T*** V, 
   double* p, double* sigma, int32_t k){
     double rate = (double)V[k][i][j] / V[0][i][j];
@@ -517,7 +517,7 @@ double BrickSketchLearn<key_len, no_layer, T, hash_t>::cal_hat_p
   }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::RemoveFlows(){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::RemoveFlows(){
     std::vector<ans_t> FF = flows_to_remove;
     uint32_t tmp_hash[r + 1];
     for (int32_t it = 0; it < FF.size(); it++)
@@ -543,7 +543,7 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::RemoveFlows(){
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-bool BrickSketchLearn<key_len, no_layer, T, hash_t>::Terminate(double theta){
+bool LcSketchLearn<key_len, no_layer, T, hash_t>::Terminate(double theta){
   
     double RATE1 = 0.6826 + STEP * log2(theta);
     double RATE2 = 0.9544 + STEP * log2(theta);
@@ -599,7 +599,7 @@ bool BrickSketchLearn<key_len, no_layer, T, hash_t>::Terminate(double theta){
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-bool BrickSketchLearn<key_len, no_layer, T, hash_t>::my_cmp(char* s1, char* s2){
+bool LcSketchLearn<key_len, no_layer, T, hash_t>::my_cmp(char* s1, char* s2){
     for (size_t i = 0; i < key_len; i++)
     {
         if (s1[i] != s2[i])
@@ -611,8 +611,8 @@ bool BrickSketchLearn<key_len, no_layer, T, hash_t>::my_cmp(char* s1, char* s2){
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickSketchLearn<key_len, no_layer, T, hash_t>::BrickSketchLearn(int32_t depth_, 
-    int32_t width_, int32_t offset_, Counter::Brick<no_layer, T>& counter_)
+LcSketchLearn<key_len, no_layer, T, hash_t>::LcSketchLearn(int32_t depth_, 
+    int32_t width_, int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_)
     : r(depth_), c(Util::NextPrime(width_)), offset(offset_), counter(counter_){
     hash_function = new hash_t[r];
     V = new T **[l + 1];
@@ -633,7 +633,7 @@ BrickSketchLearn<key_len, no_layer, T, hash_t>::BrickSketchLearn(int32_t depth_,
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickSketchLearn<key_len, no_layer, T, hash_t>::~BrickSketchLearn(){
+LcSketchLearn<key_len, no_layer, T, hash_t>::~LcSketchLearn(){
    delete[] hash_function;
    for(int32_t i = 0; i < l + 1; i++)
    {
@@ -652,7 +652,7 @@ BrickSketchLearn<key_len, no_layer, T, hash_t>::~BrickSketchLearn(){
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickSketchLearn<key_len, no_layer, T, hash_t>::size() const{
+size_t LcSketchLearn<key_len, no_layer, T, hash_t>::size() const{
     size_t cnt_num = cntNum();
     std::vector<size_t> idxs(cnt_num);
     for(size_t i = 0;i < cnt_num;++i){
@@ -660,17 +660,16 @@ size_t BrickSketchLearn<key_len, no_layer, T, hash_t>::size() const{
     }
     return sizeof(*this)
           + r * sizeof(hash_t)
-          + counter.rsize()*(cnt_num)/(8*counter.getcNum())
           + counter.csize(idxs)/8;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickSketchLearn<key_len, no_layer, T, hash_t>::cntNum() const{
+size_t LcSketchLearn<key_len, no_layer, T, hash_t>::cntNum() const{
     return (l + 1) * r * (c + 1);
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey, T val){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey, T val){
 
     uint32_t tmp_hash[r + 1];
     for (size_t i = 0; i < r; i++)
@@ -694,7 +693,7 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::update(const FlowKey<key_le
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::Sketch_Learning(){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::Sketch_Learning(){
     printf("LEARNING START!\n");
 
     // copy the data
@@ -806,16 +805,16 @@ void BrickSketchLearn<key_len, no_layer, T, hash_t>::Sketch_Learning(){
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::large_flow_filter(){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::large_flow_filter(){
   return;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-Data::Estimation<key_len, T> BrickSketchLearn<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
+Data::Estimation<key_len, T> LcSketchLearn<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
     if(updated || large_flows.size() == 0)
     {
-      const_cast<BrickSketchLearn<key_len, no_layer, T, hash_t>*>(this)->Sketch_Learning();
-      const_cast<BrickSketchLearn<key_len, no_layer, T, hash_t>*>(this)->updated = false;
+      const_cast<LcSketchLearn<key_len, no_layer, T, hash_t>*>(this)->Sketch_Learning();
+      const_cast<LcSketchLearn<key_len, no_layer, T, hash_t>*>(this)->updated = false;
     }
     Data::Estimation<key_len, T> heavy_hitters;
     for(auto it : large_flows)
@@ -829,11 +828,11 @@ Data::Estimation<key_len, T> BrickSketchLearn<key_len, no_layer, T, hash_t>::get
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickSketchLearn<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const{
+T LcSketchLearn<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const{
     if(updated || large_flows.size() == 0)
     {
-      const_cast<BrickSketchLearn<key_len, no_layer, T, hash_t>*>(this)->Sketch_Learning();
-      const_cast<BrickSketchLearn<key_len, no_layer, T, hash_t>*>(this)->updated = false;
+      const_cast<LcSketchLearn<key_len, no_layer, T, hash_t>*>(this)->Sketch_Learning();
+      const_cast<LcSketchLearn<key_len, no_layer, T, hash_t>*>(this)->updated = false;
     }
     for(auto it : large_flows)
     {
@@ -862,7 +861,7 @@ T BrickSketchLearn<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickSketchLearn<key_len, no_layer, T, hash_t>::clear(){
+void LcSketchLearn<key_len, no_layer, T, hash_t>::clear(){
   for(int32_t i = 0; i < l + 1; i++)
   {
     for(int32_t j = 0; j < r; j++)

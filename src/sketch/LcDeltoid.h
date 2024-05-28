@@ -1,9 +1,9 @@
 /**
- * @file BrickDeltoid.h
+ * @file LcDeltoid.h
  * @author deadlycat <lsmfttb@gmail.com>
  * XierLabber<yangshibo@stu.pku.edu.cn>(modified)
  * hc
- * @brief Implementation of Deltoid with Brick
+ * @brief Implementation of Deltoid with Layer counters
  *
  * @copyright Copyright (c) 2024
  *
@@ -14,27 +14,27 @@
 #include <cmath>
 #include <common/hash.h>
 #include <common/sketch.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 #include <iostream>
 #include <vector>
 
 namespace OmniSketch::Sketch {
 /**
- * @brief BrickDeltoid
+ * @brief LcDeltoid
  *
  * @tparam key_len  length of flowkey
  * @tparam T        type of the counter
  * @tparam hash_t   hashing class
  */
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
-class BrickDeltoid : public SketchBase<key_len, T> {
+class LcDeltoid : public SketchBase<key_len, T> {
 private:
   T sum_;
   int32_t num_hash_;
   int32_t num_group_;
   int32_t nbits_;
   const int32_t offset;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
   hash_t *hash_fns_; // hash funcs
 
 public:
@@ -42,12 +42,12 @@ public:
    * @brief Construct by specifying hash number and group number
    *
    */
-  BrickDeltoid(int32_t num_hash, int32_t num_group, int32_t offset_, Counter::Brick<no_layer, T>& counter_);
+  LcDeltoid(int32_t num_hash, int32_t num_group, int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_);
   /**
    * @brief Release the pointer
    *
    */
-  ~BrickDeltoid();
+  ~LcDeltoid();
   /**
    * @brief Update a flowkey with certain value
    *
@@ -87,19 +87,19 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickDeltoid<key_len, no_layer, T, hash_t>::BrickDeltoid(int32_t num_hash, int32_t num_group, int32_t offset_, Counter::Brick<no_layer, T>& counter_)
+LcDeltoid<key_len, no_layer, T, hash_t>::LcDeltoid(int32_t num_hash, int32_t num_group, int32_t offset_, Counter::LayerCounter<no_layer, T>& counter_)
     : num_hash_(num_hash), num_group_(Util::NextPrime(num_group)),
       nbits_(key_len * 8), sum_(0), offset(offset_), counter(counter_) {
   hash_fns_ = new hash_t[num_hash_];
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickDeltoid<key_len, no_layer, T, hash_t>::~BrickDeltoid() {
+LcDeltoid<key_len, no_layer, T, hash_t>::~LcDeltoid() {
   delete[] hash_fns_;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickDeltoid<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+void LcDeltoid<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                          T val) {
   sum_ += val;
   for (int32_t i = 0; i < num_hash_; ++i) {
@@ -115,7 +115,7 @@ void BrickDeltoid<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickDeltoid<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
+T LcDeltoid<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
 
   static bool cnt_distrib = true;
 
@@ -136,7 +136,7 @@ T BrickDeltoid<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flow
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 Data::Estimation<key_len, T>
-BrickDeltoid<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
+LcDeltoid<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
   T thresh = threshold;
   double val1 = 0;
   double val0 = 0;
@@ -174,20 +174,19 @@ BrickDeltoid<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) con
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickDeltoid<key_len, no_layer, T, hash_t>::size() const {
+size_t LcDeltoid<key_len, no_layer, T, hash_t>::size() const {
   size_t cnt_num = cntNum();
   std::vector<size_t> idxs(cnt_num);
   for(size_t i = 0;i < cnt_num;++i){
     idxs[i]=i+offset;
   }
-  return sizeof(BrickDeltoid<key_len, no_layer, T, hash_t>) +
+  return sizeof(LcDeltoid<key_len, no_layer, T, hash_t>) +
          num_hash_ * sizeof(hash_t) + 
-         + counter.rsize()*(cnt_num)/(8*counter.getcNum()) // redundant bits
          + counter.csize(idxs)/8;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickDeltoid<key_len, no_layer, T, hash_t>::clear() {
+void LcDeltoid<key_len, no_layer, T, hash_t>::clear() {
   sum_ = 0;
   //std::fill(arr0_[0][0], arr0_[0][0] + num_hash_ * num_group_ * nbits_, 0);
   //std::fill(arr1_[0][0], arr1_[0][0] + num_hash_ * num_group_ * (nbits_ + 1),
@@ -195,7 +194,7 @@ void BrickDeltoid<key_len, no_layer, T, hash_t>::clear() {
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickDeltoid<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcDeltoid<key_len, no_layer, T, hash_t>::cntNum() const {
   return num_group_ * num_hash_ * (nbits_+1);
 }
 

@@ -1,7 +1,7 @@
 /**
- * @file BrickCMSketch.h
+ * @file LcCMSketch.h
  * @author hc (you@domain.com)
- * @brief Implementation of Count Min Sketch with Brick
+ * @brief Implementation of Count Min Sketch with Layer counters
  *
  * @copyright Copyright (c) 2024
  *
@@ -10,7 +10,7 @@
 
 #include "common/hash.h"
 #include <common/sketch.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 
 namespace OmniSketch::Sketch {
 /**
@@ -21,16 +21,16 @@ namespace OmniSketch::Sketch {
  * @tparam hash_t   hashing class
  */
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
-class BrickCMSketch : public SketchBase<key_len, T> {
+class LcCMSketch : public SketchBase<key_len, T> {
 private:
   int32_t depth;
   int32_t width;
   const int32_t offset;
   hash_t *hash_fns;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
 
-  BrickCMSketch(const BrickCMSketch &) = delete;
-  BrickCMSketch(BrickCMSketch &&) = delete;
+  LcCMSketch(const LcCMSketch &) = delete;
+  LcCMSketch(LcCMSketch &&) = delete;
 
 public:
   /**
@@ -38,12 +38,12 @@ public:
    * @param width_ should be prime number to reduce hash collision
    *
    */
-  BrickCMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::Brick<no_layer, T>& counter_);
+  LcCMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_);
   /**
    * @brief Release the pointer
    *
    */
-  ~BrickCMSketch();
+  ~LcCMSketch();
   /**
    * @brief Update a flowkey with certain value
    *
@@ -73,19 +73,19 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickCMSketch<key_len, no_layer, T, hash_t>::BrickCMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::Brick<no_layer, T>& counter_)
+LcCMSketch<key_len, no_layer, T, hash_t>::LcCMSketch(int32_t depth_, int32_t width_, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_)
     : depth(depth_), width(Util::NextPrime(width_)), counter(counter_), offset(_offset){
   hash_fns = new hash_t[depth];
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickCMSketch<key_len, no_layer, T, hash_t>::~BrickCMSketch()
+LcCMSketch<key_len, no_layer, T, hash_t>::~LcCMSketch()
 {
     delete[] hash_fns;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickCMSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+void LcCMSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                           T val) {
   for (int32_t i = 0; i < depth; ++i) {
     int32_t index = hash_fns[i](flowkey) % width + i*width + offset;
@@ -94,7 +94,7 @@ void BrickCMSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> 
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickCMSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
+T LcCMSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
   T min_val = std::numeric_limits<T>::max();
   for (int32_t i = 0; i < depth; ++i) {
     int32_t index = hash_fns[i](flowkey) % width + i*width + offset;
@@ -104,19 +104,18 @@ T BrickCMSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flo
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickCMSketch<key_len, no_layer, T, hash_t>::size() const {
+size_t LcCMSketch<key_len, no_layer, T, hash_t>::size() const {
   std::vector<size_t> idxs(depth * width);
   for(size_t i = 0;i < depth * width;++i){
     idxs[i]=i+offset;
   }
   return sizeof(*this)                // instance
          + sizeof(hash_t) * depth     // hashing class
-         + counter.rsize()*(cntNum())/(8*counter.getcNum()) // redundant bits
          + counter.csize(idxs)/8;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickCMSketch<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcCMSketch<key_len, no_layer, T, hash_t>::cntNum() const {
   return depth * width;
 }
 

@@ -1,5 +1,5 @@
 /**
- * @file AdditiveCSTest.cpp
+ * @file TestLc.cpp
  * @author hc (you@domain.com)
  * @brief Test Additive Counter Shaing
  *
@@ -7,7 +7,7 @@
  *
  */
 
-#include <Brick/TestBrick.h>
+#include "TestDway.h"
 #include <getopt.h>
 #include <iostream>
 
@@ -17,7 +17,7 @@ static void Help(const char *ptr);
 
 // Main
 int main(int argc, char *argv[]) {
-  std::string config_file = "../src/sketch_config.toml";
+  std::string config_file = "../src/lc_config.toml";
 
   // parse command line arguments
   int opt;
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     }
   }
   auto ptr =
-      std::make_unique<Test::TestBrick>(config_file);
+      std::make_unique<Test::TestDway>(config_file);
   ptr->runTest();
   return 0;
 }

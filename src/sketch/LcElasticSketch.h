@@ -1,5 +1,5 @@
 /**
- * @file BrickElasticSketch.h
+ * @file LcElasticSketch.h
  * @author dromniscience XierLabber hc (you@domain.com)
  * @brief Implementation of Elastic Sketch with Brick
  *
@@ -10,9 +10,9 @@
 
 #include <common/hash.h>
 #include <common/sketch.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 
-#include <sketch/BrickCMSketch.h>
+#include <sketch/LcCMSketch.h>
 
 #define JUDGE_IF_SWAP(min_val, guard_val)                                      \
   ((guard_val) > ((min_val) << 3)) // delta = 8
@@ -26,7 +26,7 @@ namespace OmniSketch::Sketch {
  * @tparam hash_t   hashing class
  */
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
-class BrickElasticSketch : public SketchBase<key_len, T> {
+class LcElasticSketch : public SketchBase<key_len, T> {
 private:
   struct Entry {
     FlowKey<key_len> flowkey_;
@@ -42,16 +42,16 @@ private:
   int32_t num_buckets_;
   int32_t num_per_bucket_; // each bucket has num_per_bucket_ entries
   const int32_t offset;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
 
   hash_t hash_h_;
   // light part
-  BrickCMSketch<key_len, no_layer, T, hash_t> cm_;
+  LcCMSketch<key_len, no_layer, T, hash_t> cm_;
 
 public:
-  BrickElasticSketch(int32_t num_buckets, int32_t num_per_bucket, int32_t l_depth,
-                int32_t l_width, int32_t _offset, Counter::Brick<no_layer, T>& counter_);
-  ~BrickElasticSketch();
+  LcElasticSketch(int32_t num_buckets, int32_t num_per_bucket, int32_t l_depth,
+                int32_t l_width, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_);
+  ~LcElasticSketch();
 
   int heavypartInsert(const FlowKey<key_len> &flowkey, T val,
                       FlowKey<key_len> &swap_key, T &swap_val);
@@ -77,8 +77,8 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickElasticSketch<key_len, no_layer, T, hash_t>::BrickElasticSketch(int32_t num_buckets,
-    int32_t num_per_bucket, int32_t l_depth, int32_t l_width, int32_t _offset, Counter::Brick<no_layer, T>& counter_)
+LcElasticSketch<key_len, no_layer, T, hash_t>::LcElasticSketch(int32_t num_buckets,
+    int32_t num_per_bucket, int32_t l_depth, int32_t l_width, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_)
     : num_buckets_(Util::NextPrime(num_buckets)), num_per_bucket_(num_per_bucket+1), offset(_offset), 
       cm_(l_depth, l_width, _offset+num_buckets_*num_per_bucket_, counter_), counter(counter_) {
   buckets_ = new Entry *[num_buckets_];
@@ -89,37 +89,36 @@ BrickElasticSketch<key_len, no_layer, T, hash_t>::BrickElasticSketch(int32_t num
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickElasticSketch<key_len, no_layer, T, hash_t>::size() const {
+size_t LcElasticSketch<key_len, no_layer, T, hash_t>::size() const {
   std::vector<size_t> idxs(num_buckets_*num_per_bucket_);
   for(size_t i = 0;i < num_buckets_*num_per_bucket_;++i){
     idxs[i]=i+offset;
   }
   return sizeof(*this) 
          + (key_len + 0.125) * num_buckets_ * num_per_bucket_
-         + counter.rsize()*(cntNum())/(8*counter.getcNum())
          + counter.csize(idxs)/8
          + cm_.size();
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickElasticSketch<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcElasticSketch<key_len, no_layer, T, hash_t>::cntNum() const {
   return num_buckets_*num_per_bucket_ + cm_.cntNum();
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickElasticSketch<key_len, no_layer, T, hash_t>::clear() {
+void LcElasticSketch<key_len, no_layer, T, hash_t>::clear() {
   cm_.clear();
   std::fill(buckets_[0], buckets_[0] + num_buckets_ * num_per_bucket_, 0);
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickElasticSketch<key_len, no_layer, T, hash_t>::~BrickElasticSketch() {
+LcElasticSketch<key_len, no_layer, T, hash_t>::~LcElasticSketch() {
   delete[] buckets_[0];
   delete[] buckets_;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-int BrickElasticSketch<key_len, no_layer, T, hash_t>::heavypartInsert(
+int LcElasticSketch<key_len, no_layer, T, hash_t>::heavypartInsert(
     const FlowKey<key_len> &flowkey, T val, FlowKey<key_len> &swap_key,
     T &swap_val) {
 
@@ -167,13 +166,13 @@ int BrickElasticSketch<key_len, no_layer, T, hash_t>::heavypartInsert(
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickElasticSketch<key_len, no_layer, T, hash_t>::lightpartInsert(
+void LcElasticSketch<key_len, no_layer, T, hash_t>::lightpartInsert(
     const FlowKey<key_len> &flowkey, T val) {
   cm_.update(flowkey, val);
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickElasticSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+void LcElasticSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                           T val) {
 
   FlowKey<key_len> swap_key;
@@ -197,26 +196,26 @@ void BrickElasticSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickElasticSketch<key_len, no_layer, T, hash_t>::heavypartQuery(
+T LcElasticSketch<key_len, no_layer, T, hash_t>::heavypartQuery(
     const FlowKey<key_len> &flowkey, bool &flag) const {
   int index = hash_h_(flowkey) % num_buckets_;
   for (int i = 0; i < num_per_bucket_ - 1; ++i) {
     if (buckets_[index][i].flowkey_ == flowkey) {
       flag = buckets_[index][i].flag_;
-      return counter.query(index*num_per_bucket_+i+offset);//buckets_[index][i].val_;
+      return counter.getCnt(index*num_per_bucket_+i+offset);//buckets_[index][i].val_;
     }
   }
   return 0;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickElasticSketch<key_len, no_layer, T, hash_t>::lightpartQuery(
+T LcElasticSketch<key_len, no_layer, T, hash_t>::lightpartQuery(
     const FlowKey<key_len> &flowkey) const {
   return cm_.query(flowkey);
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickElasticSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
+T LcElasticSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
   
   bool flag = false;
   T heavy_result = heavypartQuery(flowkey, flag);

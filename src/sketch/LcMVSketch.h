@@ -1,7 +1,7 @@
 /**
- * @file BrickMVSketch.h
+ * @file LcMVSketch.h
  * @author hc
- * @brief Implementation of MVSketch with Brick
+ * @brief Implementation of MVSketch with layer counters
  *
  * @copyright Copyright (c) 2024
  *
@@ -14,15 +14,15 @@
 #include <common/hash.h>
 #include <common/sketch.h>
 #include <common/utils.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 
 namespace OmniSketch::Sketch {
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t> 
-class BrickMVSketch : public SketchBase<key_len, T> {
+class LcMVSketch : public SketchBase<key_len, T> {
   int32_t depth_;
   int32_t width_;
   const int32_t offset;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
 
 
   hash_t *hash_fns_;
@@ -41,11 +41,11 @@ class BrickMVSketch : public SketchBase<key_len, T> {
   Bucket **bkt;
 
 public:
-  BrickMVSketch(int32_t depth, int32_t width, int32_t _offset, Counter::Brick<no_layer, T>& counter_);
-  BrickMVSketch(BrickMVSketch &&) = delete;
-  ~BrickMVSketch();
-  BrickMVSketch &operator=(const BrickMVSketch &) = delete;
-  BrickMVSketch &operator=(BrickMVSketch &&) = delete;
+  LcMVSketch(int32_t depth, int32_t width, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_);
+  LcMVSketch(LcMVSketch &&) = delete;
+  ~LcMVSketch();
+  LcMVSketch &operator=(const LcMVSketch &) = delete;
+  LcMVSketch &operator=(LcMVSketch &&) = delete;
 
   void update(const FlowKey<key_len> &flow_key, T val);
   T query(const FlowKey<key_len> &flow_key) const;
@@ -69,8 +69,8 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickMVSketch<key_len, no_layer, T, hash_t>::BrickMVSketch(int32_t depth,
-    int32_t width, int32_t _offset, Counter::Brick<no_layer, T>& counter_)
+LcMVSketch<key_len, no_layer, T, hash_t>::LcMVSketch(int32_t depth,
+    int32_t width, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_)
     : depth_(depth), width_(Util::NextPrime(width)), counter(counter_), offset(_offset) {
   hash_fns_ = new hash_t[depth_];
 
@@ -82,7 +82,7 @@ BrickMVSketch<key_len, no_layer, T, hash_t>::BrickMVSketch(int32_t depth,
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickMVSketch<key_len, no_layer, T, hash_t>::~BrickMVSketch() {
+LcMVSketch<key_len, no_layer, T, hash_t>::~LcMVSketch() {
   delete[] hash_fns_;
 
   delete[] bkt[0];
@@ -90,7 +90,7 @@ BrickMVSketch<key_len, no_layer, T, hash_t>::~BrickMVSketch() {
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickMVSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flow_key,
+void LcMVSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flow_key,
                                           T val) {
   for (int i = 0; i < depth_; ++i) {
     int index = hash_fns_[i](flow_key) % width_;
@@ -111,14 +111,14 @@ void BrickMVSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> 
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-T BrickMVSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flow_key) const {
+T LcMVSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flow_key) const {
   std::vector<T> S_cap(depth_);
 
   for (int i = 0; i < depth_; ++i) {
     int index = hash_fns_[i](flow_key) % width_;
     size_t v_idx = 2*(i*width_+index)+offset;
-    T v_val = counter.query(v_idx);
-    T c_val = counter.query(v_idx+1);
+    T v_val = counter.getCnt(v_idx);
+    T c_val = counter.getCnt(v_idx+1);
     if (bkt[i][index].K == flow_key)
       S_cap[i] = (v_val + c_val) / 2;
     else
@@ -129,12 +129,12 @@ T BrickMVSketch<key_len, no_layer, T, hash_t>::query(const FlowKey<key_len> &flo
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickMVSketch<key_len, no_layer, T, hash_t>::clear() {
+void LcMVSketch<key_len, no_layer, T, hash_t>::clear() {
   std::fill(bkt[0], bkt[0] + depth_ * width_, 0);
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickMVSketch<key_len, no_layer, T, hash_t>::size() const {
+size_t LcMVSketch<key_len, no_layer, T, hash_t>::size() const {
   std::vector<size_t> idxs(2*depth_*width_);
   for(size_t i = 0;i < 2*depth_*width_;++i){
     idxs[i]=i+offset;
@@ -143,25 +143,24 @@ size_t BrickMVSketch<key_len, no_layer, T, hash_t>::size() const {
          depth_ * sizeof(hash_t) +              // hash_fns
          sizeof(Bucket *) * depth_ +            // counter
          sizeof(FlowKey<key_len>) * depth_ * width_ +
-         + counter.rsize()*(cntNum())/(8*counter.getcNum()) // redundant bits
-         + counter.csize(idxs)/8;   
+         counter.csize(idxs)/8;   
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickMVSketch<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcMVSketch<key_len, no_layer, T, hash_t>::cntNum() const {
   return 2 * depth_ * width_;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-typename BrickMVSketch<key_len, no_layer, T, hash_t>::Bounds
-BrickMVSketch<key_len, no_layer, T, hash_t>::queryBounds(
+typename LcMVSketch<key_len, no_layer, T, hash_t>::Bounds
+LcMVSketch<key_len, no_layer, T, hash_t>::queryBounds(
     const FlowKey<key_len> &flow_key) const {
   std::vector<T> L(depth_);
 
   for (int i = 0; i < depth_; ++i) {
     int index = hash_fns_[i](flow_key) % width_;
     size_t v_idx = 2*(i*width_+index)+offset;
-    L[i] = bkt[i][index].K == flow_key ? counter.query(v_idx+1) : 0;
+    L[i] = bkt[i][index].K == flow_key ? counter.getCnt(v_idx+1) : 0;
   }
 
   return {*max_element(L.begin(), L.end()), query(flow_key)};
@@ -169,14 +168,14 @@ BrickMVSketch<key_len, no_layer, T, hash_t>::queryBounds(
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
 Data::Estimation<key_len, T> 
-BrickMVSketch<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
+LcMVSketch<key_len, no_layer, T, hash_t>::getHeavyHitter(double threshold) const {
   Data::Estimation<key_len, T> heavy_hitters;
   std::set<FlowKey<key_len>> heavy_set;
 
   for (int i = 0; i < depth_; ++i)
     for (int j = 0; j < width_; ++j) {
       size_t v_idx = 2*(i*width_+j)+offset;
-      if (counter.query(v_idx) < threshold)
+      if (counter.getCnt(v_idx) < threshold)
         continue;
 
       const FlowKey<key_len> &flow_key = bkt[i][j].K;

@@ -1,64 +1,65 @@
 /**
- * @file test_ACS.cpp
+ * @file test_dway.cpp
  * @author hc (you@domain.com)
  * @brief Test routines in utils.hpp
  *
  * @copyright Copyright (c) 2023
  *
  */
-#define TEST_BRICK
+#define TEST_DWAY
 #include "test_factory.h"
-#include <common/Brick.h>
-using OmniSketch::Counter::Bucket;
-using OmniSketch::Counter::Brick;
+#include <common/layer.h>
+#include <layer_counter/Dway.h>
+using OmniSketch::Counter::DwayCntLayer;
+using OmniSketch::Counter::Dway;
 
-void TestBucketConstruct() {
+void TestDwayCntLayerConstruct() {
   try{
-    Bucket<0, int32_t> bkt({4,4},{2,2});
+    DwayCntLayer<0, int32_t> bkt({4,4},{2,2});
     VERIFY(false);
   }
   catch(const std::exception& e){
     VERIFY_EXCEPTION(e);
   }
   try{
-    Bucket<1, int32_t> bkt({4,4},{2,2});
+    DwayCntLayer<1, int32_t> bkt({4,4},{2,2});
     VERIFY(false);
   }
   catch(const std::exception& e){
     VERIFY_EXCEPTION(e);
   }
   try{
-    Bucket<2, int32_t> bkt({4,4,4},{2,2,2});
+    DwayCntLayer<2, int32_t> bkt({4,4,4},{2,2,2});
     VERIFY(false);
   }
   catch(const std::exception& e){
     VERIFY_EXCEPTION(e);
   }
   try{
-    Bucket<3, int32_t> bkt({4,4,4},{2,2});
+    DwayCntLayer<3, int32_t> bkt({4,4,4},{2,2});
     VERIFY(false);
   }
   catch(const std::exception& e){
     VERIFY_EXCEPTION(e);
   }
   try{
-    Bucket<3, int32_t> bkt({4,4,4},{10,20,30});
+    DwayCntLayer<3, int32_t> bkt({4,4,4},{10,20,30});
     VERIFY(false);
   }
   catch(const std::exception& e){
     VERIFY_EXCEPTION(e);
   }
   try{
-    Bucket<3, int32_t> bkt({4,4,2},{2,2,5});
+    DwayCntLayer<3, int32_t> bkt({4,4,2},{2,2,5});
   }
   catch(const std::exception& e){
     VERIFY_NO_EXCEPTION(e);
   }
-  std::cout << "pass test_bucket_construct" << std::endl;
+  std::cout << "pass test_DwayCntLayer_construct" << std::endl;
 }
 
-void TestBucketNormal() {
-  Bucket<3, int32_t> bkt({4,4,4},{2,2,2});
+void TestDwayCntLayerNormal() {
+  DwayCntLayer<3, int32_t> bkt({4,4,4},{2,2,2});
   VERIFY(bkt.updateSegment(0,0,2)==0);
   VERIFY(bkt.updateSegment(0,0,2)==1);
   VERIFY(bkt.updateSegment(0,0,1)==0);
@@ -68,7 +69,7 @@ void TestBucketNormal() {
   VERIFY(bkt.getSegment(1,1)==0);
   bkt.setTag(1,0,2);
   VERIFY(bkt.getTag(1,0)==2);
-  VERIFY(bkt.getTag(2,1)==BTAG_INVALID);
+  VERIFY(bkt.getTag(2,1)==DTAG_INVALID);
   bkt.setTag(1,1,3);
   bkt.setTag(2,2,1);
   VERIFY(bkt.getUnusedNum(0)==0);
@@ -80,37 +81,37 @@ void TestBucketNormal() {
   VERIFY(bkt.getUnusedNum(2)==4);
   VERIFY(bkt.getSegment(0,0)==0);
   VERIFY(bkt.bits_num(2)==40);
-  std::cout << "pass test_bucket_normal" << std::endl;
+  std::cout << "pass test_DwayCntLayer_normal" << std::endl;
 }
 
-void TestBrickNormal(){
-  Brick<3, int32_t> bkt(8, 4, {4,4,4},{2,2,2});
+void TestDwayNormal(){
+  Dway<3, int32_t> bkt(8, 4, {4,4,4},{2,2,2});
   bkt.pseed = 1; // do not use permutation for convenience
   bkt.iseed = 1;
   bkt.update(2,2);
   bkt.update(2,2);
   bkt.update(1,5);
   bkt.update(0,16);
-  VERIFY(bkt.bucket_ptr->getTag(1,0)==2+4);
-  VERIFY(bkt.bucket_ptr->getTag(1,1)==1+4);
-  VERIFY(bkt.bucket_ptr->getTag(1,2)==0+4);
-  VERIFY(bkt.bucket_ptr->getTag(1,3)==BTAG_INVALID);
-  VERIFY(bkt.bucket_ptr->getTag(2,0)==2+4);
-  VERIFY(bkt.bucket_ptr->getTag(2,1)==BTAG_INVALID);
-  VERIFY(bkt.bucket_ptr->getTag(2,2)==BTAG_INVALID);
-  VERIFY(bkt.bucket_ptr->getTag(2,3)==BTAG_INVALID);
-  VERIFY(bkt.bucket_ptr->getSegment(0,0)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(0,1)==1);
-  VERIFY(bkt.bucket_ptr->getSegment(0,2)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(0,3)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(1,0)==1);
-  VERIFY(bkt.bucket_ptr->getSegment(1,1)==1);
-  VERIFY(bkt.bucket_ptr->getSegment(1,2)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(1,3)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(2,0)==1);
-  VERIFY(bkt.bucket_ptr->getSegment(2,1)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(2,2)==0);
-  VERIFY(bkt.bucket_ptr->getSegment(2,3)==0);
+  VERIFY(bkt.cnt_ptr->getTag(1,0)==2+4);
+  VERIFY(bkt.cnt_ptr->getTag(1,1)==1+4);
+  VERIFY(bkt.cnt_ptr->getTag(1,2)==0+4);
+  VERIFY(bkt.cnt_ptr->getTag(1,3)==DTAG_INVALID);
+  VERIFY(bkt.cnt_ptr->getTag(2,0)==2+4);
+  VERIFY(bkt.cnt_ptr->getTag(2,1)==DTAG_INVALID);
+  VERIFY(bkt.cnt_ptr->getTag(2,2)==DTAG_INVALID);
+  VERIFY(bkt.cnt_ptr->getTag(2,3)==DTAG_INVALID);
+  VERIFY(bkt.cnt_ptr->getSegment(0,0)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(0,1)==1);
+  VERIFY(bkt.cnt_ptr->getSegment(0,2)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(0,3)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(1,0)==1);
+  VERIFY(bkt.cnt_ptr->getSegment(1,1)==1);
+  VERIFY(bkt.cnt_ptr->getSegment(1,2)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(1,3)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(2,0)==1);
+  VERIFY(bkt.cnt_ptr->getSegment(2,1)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(2,2)==0);
+  VERIFY(bkt.cnt_ptr->getSegment(2,3)==0);
   VERIFY(bkt.query_with_layer(0).first==16);
   VERIFY(bkt.query_with_layer(0).second==3);
   VERIFY(bkt.query_with_layer(1).first==5);
@@ -120,11 +121,11 @@ void TestBrickNormal(){
   VERIFY(bkt.query_with_layer(3).first==0);
   VERIFY(bkt.query_with_layer(3).second==1);
   bkt.clear_cnt(0);
-  VERIFY(bkt.bucket_ptr->getSegment(2,0)==0);
-  VERIFY(bkt.bucket_ptr->getTag(2,0)==BTAG_INVALID);
+  VERIFY(bkt.cnt_ptr->getSegment(2,0)==0);
+  VERIFY(bkt.cnt_ptr->getTag(2,0)==DTAG_INVALID);
   bkt.update(1, 12);
-  VERIFY(bkt.bucket_ptr->getSegment(2,0)==1);
-  VERIFY(bkt.bucket_ptr->getTag(2,0)==1+4);
+  VERIFY(bkt.cnt_ptr->getSegment(2,0)==1);
+  VERIFY(bkt.cnt_ptr->getTag(2,0)==1+4);
   VERIFY(bkt.getOriCnt(0)==0);
   VERIFY(bkt.getOriCnt(1)==17);
   VERIFY(bkt.getOriCnt(2)==4);
@@ -134,11 +135,11 @@ void TestBrickNormal(){
   VERIFY(bkt.getCnt(1)==17); 
   VERIFY(bkt.getCnt(2)==4); 
   VERIFY(bkt.getCnt(3)==0);
-  std::cout << "pass test_brick_normal" << std::endl;
+  std::cout << "pass test_Dway_normal" << std::endl;
 }
 
-void TestBrick(){
-  Brick<3, int32_t> brk(100, 4, {4,4,4},{2,2,2});
+void TestDway(){
+  Dway<3, int32_t> brk(100, 4, {4,4,4},{2,2,2});
   for(size_t i = 0;i<100;++i){
     brk.update(i,rand()%6);
   }
@@ -158,11 +159,11 @@ void TestBrick(){
     VERIFY(brk.getCnt(i)==2);
     VERIFY(brk.getOriCnt(i)==brk.getCnt(i));
   }
-  std::cout << "pass test_brick" << std::endl;
+  std::cout << "pass test_Dway" << std::endl;
 }
 
-void TestBrickOverflow(){
-  Brick<3, int32_t> bkt(12, 4, {0,2,2},{2,2,2});
+void TestDwayOverflow(){
+  Dway<3, int32_t> bkt(12, 4, {0,2,2},{2,2,2});
   bkt.pseed = 1;
   bkt.iseed = 1;
   bkt.update(1,5);// occupy seg (1,0)
@@ -200,8 +201,8 @@ void TestBrickOverflow(){
   }
 }
 
-void TestBucketNegativeException() {
-  Brick<3, int32_t> bkt(12, 4, {4,4,4},{2,2,2});
+void TestDwayCntLayerNegativeException() {
+  Dway<3, int32_t> bkt(12, 4, {4,4,4},{2,2,2});
   bkt.update(10,1);
   bkt.update(11,4);
   bkt.update(2,2);
@@ -220,13 +221,13 @@ void TestBucketNegativeException() {
  * @brief other methods in utils
  *
  */
-OMNISKETCH_DECLARE_TEST(BRICK) {
-  TestBucketConstruct();
-  TestBucketNormal();
-  TestBrickNormal();
-  TestBrick();
-  TestBrickOverflow();
-  TestBucketNegativeException();
+OMNISKETCH_DECLARE_TEST(Dway) {
+  TestDwayCntLayerConstruct();
+  TestDwayCntLayerNormal();
+  TestDwayNormal();
+  TestDway();
+  TestDwayOverflow();
+  TestDwayCntLayerNegativeException();
 }
 /** @endcond */
 #undef TEST_BRICK

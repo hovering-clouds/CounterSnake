@@ -1,5 +1,5 @@
 /**
- * @file TestBrick.h
+ * @file TestLc.h
  * @author hc (you@domain.com)
  * @brief Test Additive Counter Shaing
  *
@@ -8,17 +8,18 @@
  */
 #pragma once
 
-#include <sketch_test/BrickTest.h>
-#include <sketch_test/BrickCMTest.h>
-#include <sketch_test/BrickHashPipeTest.h>
-#include <sketch_test/BrickFlowRadarTest.h>
-#include <sketch_test/BrickDeltoidTest.h>
-#include <sketch_test/BrickPRTest.h>
-#include <sketch_test/BrickESTest.h>
-#include <sketch_test/BrickMVTest.h>
-#include <sketch_test/BrickSLTest.h>
+#include "Dway.h"
+#include <sketch_test/LcTest.h>
+#include <sketch_test/LcCMTest.h>
+#include <sketch_test/LcHashPipeTest.h>
+#include <sketch_test/LcFlowRadarTest.h>
+#include <sketch_test/LcDeltoidTest.h>
+#include <sketch_test/LcPRTest.h>
+#include <sketch_test/LcESTest.h>
+#include <sketch_test/LcMVTest.h>
+#include <sketch_test/LcSLTest.h>
 
-#define BRICK_CONFIG_PATH "Brick.config"
+#define LC_CONFIG_PATH "Lc.dway"
 
 #define KEYLEN 13 // 不同的key_type可以共享在一起，但是受限于实现方法暂时控制住
 #define COUNTER_TYPR int32_t // 不同的counter_type不应共享在一起
@@ -30,16 +31,16 @@ namespace OmniSketch::Test {
  * @brief Testing class for ACS
  *
  */
-class TestBrick {
+class TestDway {
 private:
-  using Ptr = std::unique_ptr<BrickTestBase<KEYLEN, LAYERNUM, COUNTER_TYPR>>;
+  using Ptr = std::unique_ptr<LcTestBase<KEYLEN, LAYERNUM, COUNTER_TYPR>>;
   const std::string_view config_file;
-  Counter::Brick<LAYERNUM, COUNTER_TYPR> counter;
+  Counter::Dway<LAYERNUM, COUNTER_TYPR> counter;
   int32_t counter_num;
   std::vector<Ptr> testPtr;
 
 public:
-  TestBrick(const std::string_view config_file_): config_file(config_file_){
+  TestDway(const std::string_view config_file_): config_file(config_file_){
     counter_num = 0;
   }
   
@@ -59,33 +60,33 @@ public:
 
 namespace OmniSketch::Test {
 
-void TestBrick::initPtr(toml::array& sketch_list, 
+void TestDway::initPtr(toml::array& sketch_list, 
                              Data::StreamData<KEYLEN>& data, Data::CntMethod cnt_method){
   for(auto& node: sketch_list){
     std::string str = node.as_string()->value_or<std::string>("");
     if(str.compare("CM")==0){ // CM sketch
-      testPtr.push_back(std::make_unique<BrickCMTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcCMTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway CMSketch", config_file, data, cnt_method));
     } else if(str.compare("FR")==0){ // FlowRadar
-      testPtr.push_back(std::make_unique<BrickFlowRadarTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcFlowRadarTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway FlowRadar", config_file, data, cnt_method));
     } else if(str.compare("HP")==0){ //HashPipe
-      testPtr.push_back(std::make_unique<BrickHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway HashPipe", config_file, data, cnt_method));
     } else if(str.compare("DT")==0){ //Deltoid
-      testPtr.push_back(std::make_unique<BrickDeltoidTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcDeltoidTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway Deltoid", config_file, data, cnt_method));
     } else if(str.compare("PR")==0){ //PR sketch
-      testPtr.push_back(std::make_unique<BrickPRTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcPRTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway PRSketch", config_file, data, cnt_method));
     } else if(str.compare("ES")==0){ //Elastic sketch
-      testPtr.push_back(std::make_unique<BrickESTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcESTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway ElasticSketch", config_file, data, cnt_method));
     } else if(str.compare("MV")==0){ //MV sketch
-      testPtr.push_back(std::make_unique<BrickMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway MVSketch", config_file, data, cnt_method));
     } else if(str.compare("SL")==0){ //SketchLearn
-      testPtr.push_back(std::make_unique<BrickSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway SketchLearn", config_file, data, cnt_method));
     } //else if(str.compare("CMH")==0){ //CMHeap
     //  testPtr.push_back(std::make_unique<ACSCMHeapTest<KEYLEN, COUNTER_TYPR, Hash::AwareHash>>(config_file, data, cnt_method));
     //}
   }
 }
 
-void TestBrick::runTest() {
+void TestDway::runTest() {
   srand(20240228);
   /// step i: parse ACS param
   size_t group_num, width_total;
@@ -96,7 +97,7 @@ void TestBrick::runTest() {
   if (!parser.succeed()) {
     return;
   }
-  parser.setWorkingNode(BRICK_CONFIG_PATH);
+  parser.setWorkingNode(LC_CONFIG_PATH);
   if (!parser.parseConfig(group_num, "group_num"))
     return;
   if (!parser.parseConfig(data_file, "data"))
@@ -131,7 +132,7 @@ void TestBrick::runTest() {
     ptr->initPtr(counter_num, counter, parser);
     counter_num += ptr->getCntNum();
   }
-  counter.initBucket(counter_num, group_num, dway, width_cnt);
+  counter.initCounter(counter_num, group_num, dway, width_cnt);
   for(auto&& ptr: testPtr){
     ptr->doUpdate();
   }
@@ -147,12 +148,12 @@ void TestBrick::runTest() {
     std::cout << "Original Counter Size: " << (width_total*ptr->getCntNum())/(8*1024) << " KB" << std::endl;
   }
   //std::cout << "overflow: " << counter.getOfNum() << std::endl;
-  std::ofstream outf("tmpCnt.txt", std::ios::out);
-  std::ofstream outf2("tmpOri.txt", std::ios::out);
+  //std::ofstream outf("tmpCnt.txt", std::ios::out);
+  //std::ofstream outf2("tmpOri.txt", std::ios::out);
   std::ofstream outf3("tmpFree.txt", std::ios::out);
   std::ofstream outf4("tmpOfIdx.txt", std::ios::out);
-  counter.dumpCnt(outf);
-  counter.dumpOri(outf2);
+  //counter.dumpCnt(outf);
+  //counter.dumpOri(outf2);
   counter.dumpFreeCnt(outf3);
   counter.dumpOfIdx(outf4);
   counter.validate();
@@ -161,4 +162,4 @@ void TestBrick::runTest() {
 
 } // namespace OmniSketch::Test
 
-#undef BRICK_CONFIG_PATH
+#undef LC_CONFIG_PATH

@@ -1,5 +1,5 @@
 /**
- * @file BrickPRSketch.h
+ * @file LcPRSketch.h
  * @author XierLabber (you@domain.com), hc
  * @brief PR-Sketch
  *
@@ -10,7 +10,7 @@
 
 #include <common/hash.h>
 #include <common/sketch.h>
-#include <common/Brick.h>
+#include <common/layer.h>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/IterativeLinearSolvers>
 #include <eigen3/Eigen/SparseCore>
@@ -32,7 +32,7 @@ namespace OmniSketch::Sketch {
  * @tparam hash_t   hashing class
  */
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t = Hash::AwareHash>
-class BrickPRSketch : public SketchBase<key_len, T> {
+class LcPRSketch : public SketchBase<key_len, T> {
 private:
   int32_t counter_length;
   int32_t counter_hash_num;
@@ -45,7 +45,7 @@ private:
 
   T phi;
   const int32_t offset;
-  Counter::Brick<no_layer, T>& counter;
+  Counter::LayerCounter<no_layer, T>& counter;
 
 
   std::vector<FlowKey<key_len>> recorded_keys;
@@ -72,8 +72,8 @@ private:
     return (ans >> BIT(pos)) & 1;
   }
 
-  BrickPRSketch(const BrickPRSketch &) = delete;
-  BrickPRSketch(BrickPRSketch &&) = delete;
+  LcPRSketch(const LcPRSketch &) = delete;
+  LcPRSketch(LcPRSketch &&) = delete;
 
 public:
   /**
@@ -81,14 +81,14 @@ public:
    * counter_hash_num, filter_length and filter_hash_num
    *
    */
-  BrickPRSketch(int32_t counter_length, int32_t counter_hash_num, 
+  LcPRSketch(int32_t counter_length, int32_t counter_hash_num, 
            int32_t filter_length, int32_t filter_hash_num, T phi,
-           int32_t _offset, Counter::Brick<no_layer, T>& counter_);
+           int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_);
   /**
    * @brief Release the pointer
    *
    */
-  ~BrickPRSketch();
+  ~LcPRSketch();
   /**
    * @brief Update a flowkey with certain value
    *        val is a useless parameter here, as we only count
@@ -129,9 +129,9 @@ public:
 namespace OmniSketch::Sketch {
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickPRSketch<key_len, no_layer, T, hash_t>::BrickPRSketch(int32_t counter_length, 
+LcPRSketch<key_len, no_layer, T, hash_t>::LcPRSketch(int32_t counter_length, 
     int32_t counter_hash_num, int32_t filter_length, int32_t filter_hash_num,
-    T phi, int32_t _offset, Counter::Brick<no_layer, T>& counter_): 
+    T phi, int32_t _offset, Counter::LayerCounter<no_layer, T>& counter_): 
     counter_length(Util::NextPrime(counter_length)),
     counter_hash_num(counter_hash_num), filter_length(Util::NextPrime(filter_length)),
     filter_hash_num(filter_hash_num), phi(phi), counter(counter_), offset(_offset){  
@@ -145,14 +145,14 @@ BrickPRSketch<key_len, no_layer, T, hash_t>::BrickPRSketch(int32_t counter_lengt
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-BrickPRSketch<key_len, no_layer, T, hash_t>::~BrickPRSketch(){
+LcPRSketch<key_len, no_layer, T, hash_t>::~LcPRSketch(){
     delete[] counter_hash_func;
     delete[] filter_hash_func;
     delete[] filter;
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickPRSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
+void LcPRSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                                           T val) {
     bool is_first_item = false;
     bool is_new_item = false;
@@ -181,7 +181,7 @@ void BrickPRSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> 
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-Data::Estimation<key_len, T> BrickPRSketch<key_len, no_layer, T, hash_t>::decode(){
+Data::Estimation<key_len, T> LcPRSketch<key_len, no_layer, T, hash_t>::decode(){
 
 #ifdef TEST_DECODE_TIME
   auto MY_TIMER = std::chrono::microseconds::zero();                              \
@@ -242,26 +242,25 @@ Data::Estimation<key_len, T> BrickPRSketch<key_len, no_layer, T, hash_t>::decode
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickPRSketch<key_len, no_layer, T, hash_t>::size() const{
+size_t LcPRSketch<key_len, no_layer, T, hash_t>::size() const{
   std::vector<size_t> idxs(counter_length);
     for(size_t i = 0;i < counter_length;++i){
       idxs[i]=i+offset;
     }
-    return counter.rsize()*(cntNum())/(8*counter.getcNum())
-           + counter.csize(idxs)/8
+    return counter.csize(idxs)/8
            + (filter_length >> 3)
            + (counter_hash_num + filter_hash_num) * sizeof(hash_t)
            + sizeof(*this);
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-void BrickPRSketch<key_len, no_layer, T, hash_t>::clear(){
+void LcPRSketch<key_len, no_layer, T, hash_t>::clear(){
     std::fill(filter, filter + FILTER_LENGTH(filter_length), 0);
     recorded_keys.clear();
 }
 
 template <int32_t key_len, int32_t no_layer, typename T, typename hash_t>
-size_t BrickPRSketch<key_len, no_layer, T, hash_t>::cntNum() const {
+size_t LcPRSketch<key_len, no_layer, T, hash_t>::cntNum() const {
   return counter_length;
 }
 
