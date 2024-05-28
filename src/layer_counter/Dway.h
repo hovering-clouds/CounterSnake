@@ -197,7 +197,7 @@ private:
   /**
    * @brief Seed used for random permutation. The formula is: true_idx = (original_idx*pseed)%cNum.
    * Therefore, for inversibility, `pseed` needs to be coprime with `cNum`. Also, we need to spread
-   * the counters of each sketch evenly in the buckets, so `pseed` should be much greater than the number
+   * the counters of each sketch evenly in the counters, so `pseed` should be much greater than the number
    * of sketch instances.
    * 
    */
@@ -208,7 +208,7 @@ private:
    */
   size_t iseed;
   /**
-   * @brief Buckets used to store the counters
+   * @brief the pointer to counter layers
    * 
    */
   std::unique_ptr<DwayCntLayer<no_layer, T>> cnt_ptr;
@@ -262,7 +262,7 @@ private:
   std::pair<T, int32_t> query_with_layer(size_t ori_index);
 public:
   /**
-   * @brief Construct Brick and initialize inner Buckets.
+   * @brief Construct dway sharing structure and initialize inner counters.
    * 
    * @param counter_num Number of counters you wish to use.
    * @param dway Number shared segments in each layer.
@@ -275,7 +275,7 @@ public:
   }
 
   /**
-   * @brief Construct without initialize Buckets, need to initialize later. 
+   * @brief Construct without initialize counters, need to initialize later. 
    * 
    */
   Dway(){}
@@ -352,7 +352,7 @@ public:
     return decoded_cnt[ori_index];
   }
   /**
-   * @brief Get memory consumption of this Brick in bytes
+   * @brief Get memory consumption of this structure in bytes
    * 
    */
   size_t bsize() const;
@@ -579,7 +579,7 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
     if(of_val!=0){
       if(lr==no_layer-1){ // last layer should not overflow
         throw std::overflow_error(
-            "Counter overflow at the last layer in Bucket, overflow by " +
+            "Counter overflow at the last layer in dway counter, overflow by " +
             std::to_string(of_val) + ".");
       }
       val = of_val;
