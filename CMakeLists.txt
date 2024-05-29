@@ -113,3 +113,5 @@ add_user_sketch(SL SketchLearn)
 # Additive Counter Sharing
 add_executable(Dway ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestDway.cpp)
 target_link_libraries(Dway OmniTools)
+add_executable(Brick ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestBrick.cpp)
+target_link_libraries(Brick OmniTools)

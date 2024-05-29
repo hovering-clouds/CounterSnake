@@ -9,6 +9,13 @@
     width_cnt = [8, 8, 16]
     dway = [0, 8, 1]
 
+  [Lc.brick]
+    sketch = ["CM","FR","HP","DT","PR","ES","MV","SL"]
+    data = "../data/data-100K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [8, 8, 16]
+    no_cnt = [64, 8, 1]
 
 [CM]
 
