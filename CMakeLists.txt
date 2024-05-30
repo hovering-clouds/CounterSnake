@@ -117,3 +117,5 @@ add_executable(Brick ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestBrick.cpp
 target_link_libraries(Brick OmniTools)
 add_executable(Pyramid ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestPyramid.cpp)
 target_link_libraries(Pyramid OmniTools)
+add_executable(Bitsense ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestBitsense.cpp)
+target_link_libraries(Bitsense OmniTools)
