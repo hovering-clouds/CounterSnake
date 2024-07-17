@@ -26,9 +26,16 @@ def show_result2():
         result[i] = math.log10(sum(digit_cnt[i:])/num_sum)
     print(f"sum={num_sum}, result={result}")
 
+def show_result3():
+    cnt_sum = sum(digit_cnt)
+    bitsum = 0
+    for i in range(16):
+        bitsum+=(1+i)*digit_cnt[i]
+    print(f"fixed={cnt_sum*16/8/1024}, var={bitsum/8/1024}, reduct={(cnt_sum*16-bitsum)/cnt_sum/16}")
+   
 
 #for prefix in ["cm", "fr", "es", "pr", "dt", "hp", "sl", "mv"]:
 #    f_name = f"./exp1-cnt-{prefix}.txt"
 #    get_cnt(f_name)
-get_cnt("exp1-flow.txt")
-show_result2()
+get_cnt("exp1-cnt-hp.txt")
+show_result3()
