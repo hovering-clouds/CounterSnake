@@ -156,13 +156,17 @@ void PRSketch<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
 
     for(int i = 0; i < counter_hash_num; i++){
         size_t idx = counter_hash_func[i](flowkey) % counter_length;
+#ifdef FAST_PR
         if(counter[idx] <= phi){
             is_first_item = true;
         }
+#endif
         counter[idx] += val;
     }
 
+#ifdef FAST_PR
     if(is_first_item){
+#endif
         for(int i = 0; i < filter_hash_num; i++){
             size_t idx = filter_hash_func[i](flowkey) % filter_length;
             if(!getBit(idx)){
@@ -170,8 +174,9 @@ void PRSketch<key_len, T, hash_t>::update(const FlowKey<key_len> &flowkey,
                 setBit(idx);
             }
         }
+#ifdef FAST_PR
     }
-
+#endif
     if(is_new_item){
         recorded_keys.push_back(flowkey);
     }

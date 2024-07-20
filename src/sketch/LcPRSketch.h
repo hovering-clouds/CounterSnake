@@ -159,13 +159,17 @@ void LcPRSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &fl
 
     for(int i = 0; i < counter_hash_num; i++){
         size_t idx = counter_hash_func[i](flowkey) % counter_length;
+#ifdef FAST_PR
         if(counter.query(idx+offset) <= phi){
             is_first_item = true;
         }
+#endif
         counter.update(idx+offset, val);
     }
 
+#ifdef FAST_PR
     if(is_first_item){
+#endif
         for(int i = 0; i < filter_hash_num; i++){
             size_t idx = filter_hash_func[i](flowkey) % filter_length;
             if(!getBit(idx)){
@@ -173,7 +177,9 @@ void LcPRSketch<key_len, no_layer, T, hash_t>::update(const FlowKey<key_len> &fl
                 setBit(idx);
             }
         }
+#ifdef FAST_PR
     }
+#endif
 
     if(is_new_item){
         recorded_keys.push_back(flowkey);

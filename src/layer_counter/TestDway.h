@@ -157,6 +157,7 @@ void TestDway::runTest() {
   counter.dumpFreeCnt(outf3);
   counter.dumpOfIdx(outf4);
   counter.validate();
+  std::cout << "mem consumption of counters: "<< counter.bsize()/1024 << " KB." << std::endl;
   return;
 }
 

@@ -23,7 +23,7 @@
 
 #define KEYLEN 13 // 不同的key_type可以共享在一起，但是受限于实现方法暂时控制住
 #define COUNTER_TYPR int32_t // 不同的counter_type不应共享在一起
-#define LAYERNUM 3 // 层数需要与config文件中一致
+#define LAYERNUM 5 // 层数需要与config文件中一致
 
 namespace OmniSketch::Test {
 
