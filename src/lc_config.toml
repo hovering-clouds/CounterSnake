@@ -1,14 +1,14 @@
 [Lc] # Layer Counter
   
   [Lc.dway]
-    #sketch = ["CM","FR","HP","DT","PR","ES","MV","SL"]
-    sketch = ["ES"]
-    data = "../data/data-100K-5.bin"
+    sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
+    #sketch = ["MV"]
+    data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
-    group_num = 64
+    group_num = 128
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [8, 8, 16]
-    dway = [0, 4, 1]
+    dway = [0, 10, 1]
 
   [Lc.brick]
     sketch = ["ES"]
@@ -83,16 +83,16 @@
 [HP]
 
   [HP.para]
-    depth = 5
-    width = 5222
+    depth = 3
+    width = 2222
 
   [HP.data]
     hx_method = "TopK"
-    threshold_heavy_hitter = 10000
+    threshold_heavy_hitter = 50
 
   [HP.test]
     update = ["RATE"]
-    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1", "RCD"]
 
 
 [DT]
@@ -131,8 +131,8 @@
   [ES.para]
     num_buckets = 1000
     num_per_bucket = 1
-    l_depth = 6
-    l_width = 150001
+    l_depth = 4
+    l_width = 120001
 
   [ES.test]
     update = ["RATE"]
@@ -142,17 +142,17 @@
 [MV]
 
   [MV.para]
-    depth = 2
-    width = 13061
+    depth = 3
+    width = 3001
 
   [MV.data]
     hx_method = "TopK"
-    threshold_heavy_hitter = 3000
+    threshold_heavy_hitter = 500
 
   [MV.test]
     update = ["RATE"]
     query = ["RATE", "ARE", "AAE"]
-    heavyhitter = ["TIME", "ARE", "PRC", "RCL","F1"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL","F1", "RCD"]
 
 
 [SL]
