@@ -9,12 +9,14 @@
 #pragma once
 
 #define DEBUG_DWAY
+#define TEST_DECODE_TIME
 #include <common/utils.h>
 #include <common/layer.h>
 #include <numeric>
 #include <vector>
 #include <set>
 #include <iostream>
+#include <chrono>
 #define DTAG_INVALID 0
 typedef unsigned short dtag_t;
 
@@ -670,6 +672,11 @@ void Dway<no_layer, T>::clear_cnt(size_t ori_index){
 
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::decode(){
+#ifdef TEST_DECODE_TIME
+  auto MY_TIMER = std::chrono::microseconds::zero();
+  auto MY_TICK = std::chrono::steady_clock::now();
+  auto MY_TOCK = std::chrono::steady_clock::now();
+#endif
   std::vector<size_t> accum_bits(no_layer);
   accum_bits[0] = cnt_ptr->getWidth(0);
   for(int32_t lr=1;lr<no_layer;++lr){
@@ -693,6 +700,12 @@ void Dway<no_layer, T>::decode(){
   for(int32_t lr=1;lr<no_layer;++lr){
     rsz += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr)+tag_len);
   }
+#ifdef TEST_DECODE_TIME
+  MY_TOCK = std::chrono::steady_clock::now();
+  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
+                                                                   MY_TICK);
+  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+#endif
 }
 
 template <int32_t no_layer, typename T>

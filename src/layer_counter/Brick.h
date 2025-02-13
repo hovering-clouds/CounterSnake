@@ -9,11 +9,14 @@
 #pragma once
 
 #define DEBUG_BRICK
+#define TEST_DECODE_TIME
 #include <common/utils.h>
 #include <common/layer.h>
 #include <numeric>
 #include <vector>
 #include <iostream>
+#include <chrono>
+
 
 namespace OmniSketch::Counter{
 
@@ -828,6 +831,11 @@ size_t Brick<no_layer, T>::getOfNum() const{
 
 template <int32_t no_layer, typename T>
 void Brick<no_layer, T>::decode(){
+#ifdef TEST_DECODE_TIME
+  auto MY_TIMER = std::chrono::microseconds::zero();
+  auto MY_TICK = std::chrono::steady_clock::now();
+  auto MY_TOCK = std::chrono::steady_clock::now();
+#endif
   rsz = 0;
   for (size_t i = 0; i < bNum; i++){
     buckets[i].decode();
@@ -838,6 +846,12 @@ void Brick<no_layer, T>::decode(){
   double ofbits_d = log2(static_cast<double>(ofNum+1));
   size_t ofbits = static_cast<size_t>(ceil(ofbits_d));
   rsz += bNum*ofbits;
+#ifdef TEST_DECODE_TIME
+  MY_TOCK = std::chrono::steady_clock::now();
+  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
+                                                                   MY_TICK);
+  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+#endif
 }
 
 template <int32_t no_layer, typename T>

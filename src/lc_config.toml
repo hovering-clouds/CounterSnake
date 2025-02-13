@@ -2,35 +2,35 @@
   
   [Lc.dway]
     sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
-    #sketch = ["MV"]
+    #sketch = ["CM","FR","ES"]
     data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
-    group_num = 128
+    group_num = 256
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [8, 8, 16]
-    dway = [0, 10, 1]
+    dway = [0, 8, 1]
 
   [Lc.brick]
-    sketch = ["ES"]
-    data = "../data/data-100K-5.bin"
+    sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
+    data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [8, 8, 16]
     no_cnt = [64, 4, 1]
 
   [Lc.pyramid]
-    sketch = ["ES"]
-    data = "../data/data-100K-5.bin"
+    sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
+    data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [4, 4, 8, 8, 8]
 
   [Lc.bs]
-    sketch = ["ES"]
-    data = "../data/data-100K-5.bin"
+    sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
+    data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    no_cnt_ratio = 0.04
+    no_cnt_ratio = 0.09
     width_cnt = [8, 8, 16]
     no_hash = [3, 3]
     aux_width_ratio = 0.15
@@ -83,12 +83,12 @@
 [HP]
 
   [HP.para]
-    depth = 3
-    width = 2222
+    depth = 5
+    width = 6222
 
   [HP.data]
     hx_method = "TopK"
-    threshold_heavy_hitter = 50
+    threshold_heavy_hitter = 1000
 
   [HP.test]
     update = ["RATE"]
@@ -98,8 +98,8 @@
 [DT]
 
   [DT.para]
-    num_hash = 2
-    num_group = 5000
+    num_hash = 3
+    num_group = 5400
 
   [DT.data]
     hx_method = "TopK"
@@ -158,7 +158,7 @@
 [SL]
 
   [SL.para]
-    depth = 2
+    depth = 3
     width = 3000
 
   [SL.data]

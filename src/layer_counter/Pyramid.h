@@ -7,10 +7,12 @@
  *
  */
 #pragma once
+#define TEST_DECODE_TIME
 
 #include <common/layer.h>
 #include <common/utils.h>
 #include <iostream>
+#include <chrono>
 
 namespace OmniSketch::Counter{
 
@@ -328,6 +330,11 @@ T Pyramid<no_layer, T>::query(size_t ori_index){
 
 template <int32_t no_layer, typename T>
 void Pyramid<no_layer, T>::decode(){
+#ifdef TEST_DECODE_TIME
+  auto MY_TIMER = std::chrono::microseconds::zero();
+  auto MY_TICK = std::chrono::steady_clock::now();
+  auto MY_TOCK = std::chrono::steady_clock::now();
+#endif
   for(size_t i = 0;i<cNum;++i){
     decoded_cnt[i] = query(i);
   }
@@ -349,6 +356,12 @@ void Pyramid<no_layer, T>::decode(){
     }
     tmp_cnt.swap(size_cnt);
   }
+#ifdef TEST_DECODE_TIME
+  MY_TOCK = std::chrono::steady_clock::now();
+  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
+                                                                   MY_TICK);
+  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+#endif
 }
 
 template <int32_t no_layer, typename T>
