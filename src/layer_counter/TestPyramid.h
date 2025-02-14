@@ -138,12 +138,14 @@ void TestPyramid::runTest() {
   for(auto&& ptr: testPtr){
     ptr->runTest();
   }
+  counter.validate();
   std::cout << "layer1 overflow: " << counter.getOfNum(0) << '/' << counter.getcNum() << std::endl;
+  std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   //std::cout << counter.bsize() << std::endl;
-  std::ofstream outf("tmpCnt.txt", std::ios::out);
-  std::ofstream outf2("tmpOri.txt", std::ios::out);
-  counter.dumpCnt(outf);
-  counter.dumpOri(outf2);
+  //std::ofstream outf("tmpCnt.txt", std::ios::out);
+  //std::ofstream outf2("tmpOri.txt", std::ios::out);
+  //counter.dumpCnt(outf);
+  //counter.dumpOri(outf2);
   return;
 }
 

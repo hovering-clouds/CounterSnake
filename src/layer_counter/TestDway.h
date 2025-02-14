@@ -158,6 +158,7 @@ void TestDway::runTest() {
   counter.dumpOfIdx(outf4);
   counter.validate();
   std::cout << "mem consumption of counters: "<< counter.bsize()/1024 << " KB." << std::endl;
+  std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   return;
 }
 

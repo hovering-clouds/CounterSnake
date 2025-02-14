@@ -295,6 +295,8 @@ public:
    *
    */
   size_t size() const;
+
+  size_t tagsize() const;
   /**
    * @brief Get the number of overflow counters in layer `lr`
    * 
@@ -321,6 +323,24 @@ public:
    */
   void clear();
   void decode();
+  /**
+   * @brief Check the consistency between counters and ori_counters
+   * 
+   */
+  void validate() const{
+    size_t num = 0;
+    size_t err = 0;
+    for (size_t i = 0; i < cNum; i++){
+      if(original_cnt[i]!=decoded_cnt[i]){
+        //std::cout << i << ' ' << original_cnt[i] << ' ' << decoded_cnt[i] << std::endl;
+        num++;
+        err += std::abs(original_cnt[i]-decoded_cnt[i]);
+      }
+    }
+    std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
+    std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
+    std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+  }
   /**
    * @brief Get the value of status bits in BS
    *
@@ -889,6 +909,17 @@ size_t BitSense<no_layer, T, hash_t>::size() const {
     tot += ((length * cm_width * cm_row) >> 3);
     tot += cm_row * sizeof(hash_t);
   }
+  return tot;
+}
+
+template <int32_t no_layer, typename T, typename hash_t>
+size_t BitSense<no_layer, T, hash_t>::tagsize() const {
+  //status bits
+  size_t tot = 0; // first in bits
+  for (int32_t i = 0; i < no_layer; ++i) {
+    tot += no_cnt[i];
+  }
+  tot >>= 3; // to bytes
   return tot;
 }
 

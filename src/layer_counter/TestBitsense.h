@@ -161,9 +161,11 @@ void TestBitsense::runTest() {
   for(auto&& ptr: testPtr){
     ptr->runTest();
   }
+  counter.validate();
   for(int32_t lr = 0;lr<LAYERNUM-1;++lr){
     std::cout << "lr" << lr << " overflow: " << counter.getOfNum(lr) << '/' << no_cnt[lr+1] << std::endl;
   }
+  std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   return;
 }
 

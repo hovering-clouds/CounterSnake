@@ -142,6 +142,7 @@ void TestBrick::runTest() {
   }
   std::cout << "overflow: " << counter.getOfNum() << std::endl;
   counter.validate();
+  std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   //std::cout << counter.bsize() << std::endl;
   //std::ofstream outf("tmpCnt.txt", std::ios::out);
   //std::ofstream outf2("tmpOri.txt", std::ios::out);

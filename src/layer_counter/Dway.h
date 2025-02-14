@@ -166,6 +166,12 @@ public:
    * @return Memory consumption in bits
    */
   size_t bits_num(size_t tag_len) const;
+  /**
+   * @brief Get memory consumption of the tags.
+   * 
+   * @return Memory consumption in bits
+   */
+  size_t tag_bits(size_t tag_len) const;
 };
 
 /**
@@ -359,6 +365,11 @@ public:
    */
   size_t bsize() const;
   /**
+   * @brief Get memory consumption of tags in bytes
+   * 
+   */
+  size_t tagsize() const;
+  /**
    * @brief Get the memory usage of the given counters, return in bits
    * 
    */
@@ -417,13 +428,17 @@ public:
    */
   void validate() const{
     size_t num = 0;
+    size_t err = 0;
     for (size_t i = 0; i < cNum; i++){
       if(original_cnt[i]!=decoded_cnt[i]){
         //std::cout << i << ' ' << original_cnt[i] << ' ' << decoded_cnt[i] << std::endl;
         num++;
+        err += std::abs(original_cnt[i]-decoded_cnt[i]);
       }
     }
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
+    std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
+    std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
   }
   /**
    * @brief Clear the counters
@@ -519,6 +534,15 @@ size_t DwayCntLayer<no_layer, T>::bits_num(size_t tag_len) const{
   size_t bits = no_cnt[0]*width_cnt[0];
   for(int32_t lr = 1; lr<no_layer; ++lr){
     bits+=no_cnt[lr]*(width_cnt[lr]+tag_len);
+  }
+  return bits;
+}
+
+template <int32_t no_layer, typename T>
+size_t DwayCntLayer<no_layer, T>::tag_bits(size_t tag_len) const{
+  size_t bits = 0;
+  for(int32_t lr = 1; lr<no_layer; ++lr){
+    bits+=no_cnt[lr]*tag_len;
   }
   return bits;
 }
@@ -712,6 +736,12 @@ template <int32_t no_layer, typename T>
 size_t Dway<no_layer, T>::bsize() const{
   size_t tag_len = ceil(log2(gNum))+1;
   return cnt_ptr->bits_num(tag_len)/8;
+}
+
+template <int32_t no_layer, typename T>
+size_t Dway<no_layer, T>::tagsize() const{
+  size_t tag_len = ceil(log2(gNum))+1;
+  return cnt_ptr->tag_bits(tag_len)/8;
 }
 
 template <int32_t no_layer, typename T>

@@ -225,6 +225,7 @@ public:
     return size_cnt[index];
   }
 
+  size_t tagsize() const;
   /**
    * @brief Get the redundant memory in bits. (Size of unused higher-layer counters and status-arrays)
    * 
@@ -434,6 +435,8 @@ public:
 
   size_t csize(const std::vector<size_t>& idxs) const override;
 
+  size_t tagsize() const;
+
   /**
    * @brief Get the number of overflow buckets
    * 
@@ -475,6 +478,17 @@ public:
         break;
       }
     }
+    size_t num = 0;
+    size_t err = 0;
+    for (size_t i = 0; i < cNum; i++){
+      if(getOriCnt(i)!=getCnt(i)){
+        num++;
+        err += std::abs(getOriCnt(i)!=getCnt(i));
+      }
+    }
+    std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
+    std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
+    std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
   }
   /**
    * @brief Clear the counters
@@ -762,6 +776,23 @@ size_t Bucket<no_layer, T>::bsize() const{
 }
 
 template <int32_t no_layer, typename T>
+size_t Bucket<no_layer, T>::tagsize() const{
+  size_t sbits = 0; // status bits
+  constexpr size_t obits = 1; // overflow
+  size_t fbits = 0; // full_box bits
+  size_t max_width = 0;
+  for (size_t i = 0; i < no_layer; i++){
+    sbits+=no_cnt[i];
+    max_width+=width_cnt[i];
+  }
+  sbits-=no_cnt[no_layer-1];
+  if(overflow){
+    fbits = no_cnt[0]*max_width;
+  }
+  return (sbits+obits+7)/8+(fbits+7)/8;
+}
+
+template <int32_t no_layer, typename T>
 void Bucket<no_layer, T>::dumpCnt(std::ostream& os) const{
   for(auto i: decoded_cnt){
     os << i << ' ';
@@ -859,6 +890,20 @@ size_t Brick<no_layer, T>::bsize() const{
   size_t bytes = 0;
   for (size_t i = 0; i < bNum; i++){
     bytes+=buckets[i].bsize();
+  }
+  // count the number of overflow buckets to get the minimum bits needed for full_box index.
+  size_t ofNum = getOfNum();
+  double ofbits_d = log2(static_cast<double>(ofNum+1));
+  size_t ofbits = static_cast<size_t>(ceil(ofbits_d));
+  bytes += (bNum*ofbits+7)/8;
+  return bytes;
+}
+
+template <int32_t no_layer, typename T>
+size_t Brick<no_layer, T>::tagsize() const{
+  size_t bytes = 0;
+  for (size_t i = 0; i < bNum; i++){
+    bytes+=buckets[i].tagsize();
   }
   // count the number of overflow buckets to get the minimum bits needed for full_box index.
   size_t ofNum = getOfNum();
