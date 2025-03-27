@@ -50,6 +50,16 @@
     update = ["RATE"]
     query = ["RATE", "ARE", "AAE", "RCD"]
   
+[CS]
+
+  [CS.para]
+    depth = 4
+    width = 115001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  
 
 [CMHEAP]
 
