@@ -15,12 +15,14 @@
 #include <eigen3/Eigen/SparseCore>
 #include <boost/dynamic_bitset.hpp>
 #include <map>
+#include <random>
 
 #define BYTE(n) ((n) >> 3)
 #define BIT(n) ((n)&7)
 #define FILTER_LENGTH(n) ((n + 7) >> 3)
 
 #define TEST_DECODE_TIME
+#define USE_CNT_ERR
 
 namespace OmniSketch::Sketch {
 /**
@@ -202,6 +204,18 @@ void PRSketch<key_len, T, hash_t>::recover(){
   {
     recorded_b[i] = (double)counter[i];
   }
+  #ifdef USE_CNT_ERR
+  std::default_random_engine e;
+  e.seed(20250327);
+  std::uniform_int_distribution<int> randint(0, counter_length-1);
+  for(int i = 0; i < 12; ++i){
+    int a = randint(e);
+    //int b = randint(e);
+    //double tmp = recorded_b[a]+recorded_b[b];
+    recorded_b[a] = 0;
+    //recorded_b[b] = tmp;
+  }
+  #endif  
   Eigen::VectorXd X(key_num),
       b = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(recorded_b.data(),
                                                         recorded_b.size());

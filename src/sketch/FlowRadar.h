@@ -11,6 +11,8 @@
 
 #include <common/hash.h>
 #include <sketch/BloomFilter.h>
+#include <random>
+#define USE_CNT_ERR
 
 namespace OmniSketch::Sketch {
 /**
@@ -148,6 +150,20 @@ Data::Estimation<key_len, T> FlowRadar<key_len, T, hash_t>::decode() {
         return ptr1->flow_count < ptr2->flow_count;
     }
   };
+  
+  #ifdef USE_CNT_ERR
+  std::default_random_engine e;
+  e.seed(20250327);
+  std::uniform_int_distribution<int> randint(0, num_count_table-1);
+  for(int i = 0; i < 14; ++i){
+    int a = randint(e);
+    //int b = randint(e);
+    //double tmp = count_table[a].packet_count+count_table[b].packet_count;
+    count_table[a].packet_count = 0;
+    //count_table[b].packet_count = tmp;
+  }
+  #endif  
+
   std::set<CountTableEntry *, CompareFlowCount> set;
   for (int32_t i = 0; i < num_count_table; ++i) {
     set.insert(count_table + i);

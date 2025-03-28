@@ -109,6 +109,7 @@ add_user_sketch(PR PRSketch)
 add_user_sketch(ES ElasticSketch)
 add_user_sketch(MV MVSketch)
 add_user_sketch(SL SketchLearn)
+add_user_sketch(NZE NZESketch)
 
 # Additive Counter Sharing
 add_executable(Dway ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestDway.cpp)

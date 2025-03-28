@@ -64,22 +64,18 @@
 [FlowRadar] # Flow Radar
 
   [FlowRadar.para]
-    flow_filter_bit = 2080150
+    flow_filter_bit = 3080150
     flow_filter_hash = 10
-    count_table_num = 125510
+    count_table_num = 140510
     count_table_hash = 3
-    #flow_filter_bit = 10000
-    #flow_filter_hash = 5
-    #count_table_num = 5000
-    #count_table_hash = 5
   
   [FlowRadar.data]
-    data = "../data/data-100K-2.bin"
+    data = "../data/data-100K-5.bin"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
   
   [FlowRadar.test]
-    update = ["RATE"]
-    decode = ["TIME", "ARE", "AAE", "RATIO", "ACC", "PODF"]
+    update = []
+    decode = ["AAE", "RATIO", "ACC", "PODF"]
     decode_podf = 0.01
 
 [DT] # Deltoid
@@ -192,3 +188,22 @@
   update = ["RATE"]
   query = ["RATE", "ARE", "AAE"]
   heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
+
+[NZE] # NZE
+
+  [NZE.para]
+  BFHashNum = 4
+  BFBitsNum = 580001
+  FSdepth = 3
+  FSwidth = 40001
+  HTLength = 1237
+
+  [NZE.data]
+  cnt_method = "InPacket"
+  data = "../data/data-100K-5.bin"
+  format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+
+  [NZE.test]
+  update = []
+  query = ["ARE", "PODF"]
+  query_podf = 0.01
