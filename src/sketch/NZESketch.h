@@ -17,7 +17,7 @@
  #include <map>
  #include <random>
  #include "BloomFilter.h"
- #define USE_CNT_ERR
+ //#define USE_CNT_ERR
 
  
  namespace OmniSketch::Sketch {

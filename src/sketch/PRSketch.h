@@ -22,7 +22,7 @@
 #define FILTER_LENGTH(n) ((n + 7) >> 3)
 
 #define TEST_DECODE_TIME
-#define USE_CNT_ERR
+//#define USE_CNT_ERR
 
 namespace OmniSketch::Sketch {
 /**

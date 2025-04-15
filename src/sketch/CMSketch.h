@@ -116,6 +116,7 @@ T CMSketch<key_len, T, hash_t>::query(const FlowKey<key_len> &flowkey) const {
 
 template <int32_t key_len, typename T, typename hash_t>
 size_t CMSketch<key_len, T, hash_t>::size() const {
+  //dump_results();
   return sizeof(*this)                // instance
          + sizeof(hash_t) * depth     // hashing class
          + sizeof(T) * depth * width; // counter
