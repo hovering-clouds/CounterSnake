@@ -174,11 +174,11 @@ void TestDwayOverflow(){
   bkt.update(2,10);// occupy seg (2,1)
   bkt.update(6,9);// occupy seg (1,3)
   bkt.update(6,9);// report overflow at layer 1
-  VERIFY(bkt.report_ofl.size()==3);
+  VERIFY(bkt.backup_tbl.size()==3);
   // the last two layer1 segments are allocated with two layer2 segments so won't overflow
   bkt.update(9,18);// occupy seg (1,4) and (2,2)
   bkt.update(10,18);// occupy seg (1,5) and (2,3)
-  VERIFY(bkt.report_ofl.size()==3);
+  VERIFY(bkt.backup_tbl.size()==3);
   VERIFY(bkt.query_with_layer(0).first==1);
   VERIFY(bkt.query_with_layer(0).second==1);
   VERIFY(bkt.query_with_layer(1).first==5);

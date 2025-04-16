@@ -226,6 +226,11 @@ private:
    */
   std::vector<size_t> di;
   /**
+   * @brief The number of excessive overflows in each layer.
+   * 
+   */
+  std::vector<size_t> of_num;
+  /**
    * @brief Original counters(ground truth)
    *
    */
@@ -241,12 +246,11 @@ private:
    */
   std::vector<size_t> cnt_size;
   
-  typedef std::pair<int32_t, size_t> seg_idx;
   /**
    * @brief Reported overflow, in the form (layer, index)
    * 
    */
-  std::vector<std::pair<seg_idx, T>> report_ofl;
+  std::map<int32_t, T> backup_tbl;
 
   Dway(const Dway &) = delete;
   Dway(Dway &&) = delete;
@@ -256,11 +260,7 @@ private:
    * @note The index is the counter index (layer0 index), not the segment index
    * 
    */
-  void report(int32_t layer, size_t index, T val){
-    seg_idx sidx = std::make_pair(layer, index);
-    report_ofl.push_back(std::make_pair(sidx, val));
-    //std::cout << "report overflow at layer "<< layer << ", index "  << index << ", value " << val << std::endl;
-  }
+  void insert_backup(int32_t layer, size_t index, T of_val);
   /**
    * @brief Query a counter and its layer, should be used offline in `decode`
    * 
@@ -569,7 +569,7 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
     }
   }
   // initialize permutation seeds
-  int32_t candidate = 31;
+  int32_t candidate = gNum;
   int32_t cNum32 = static_cast<int32_t>(cNum);
   while(true){
     if(Util::IsCoprime(candidate, cNum32)){
@@ -593,12 +593,19 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
   cnt_size.resize(no_cnt[0]);
   std::fill_n(cnt_size.begin(), no_cnt[0], 0);
+  of_num.resize(no_layer);
+  std::fill_n(of_num.begin(), no_layer, 0);
 }
 
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::update(size_t ori_index, T val){
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    it->second += val;
+    return;
+  }
   for(int32_t lr = 0;lr<no_layer;++lr){
     T of_val = cnt_ptr->updateSegment(lr, index, val);
     //std::cout << lr << ' ' << index << ' ' <<of_val << std::endl;
@@ -630,17 +637,45 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
           break;
         }
       }
-      // Case 3: unhandled overflow, report to control plane
-      if(!matched){report(lr, ori_index, of_val);break;}
+      // Case 3: excessive overflow, insert into the backup table
+      if(!matched){
+        of_num[lr]++;
+        insert_backup(lr, index, of_val);
+        break;
+      }
     } else {
       break;
     }
   }
 }
 
+
+template<int32_t no_layer, typename T>
+inline void Dway<no_layer, T>::insert_backup(int32_t layer, size_t index, T of_val)
+{
+  T val = of_val;
+  for(int32_t i = layer; i>0; --i){
+    val <<= cnt_ptr->getWidth(i);
+    val += cnt_ptr->getSegment(i, index);
+    size_t gid = index/di[i];
+    dtag_t tag = cnt_ptr->getTag(i, index);
+    cnt_ptr->setTag(i, index, DTAG_INVALID);
+    cnt_ptr->resetSegment(i, index);
+    index = gid*gNum+(tag-gNum);
+  }
+  val <<= cnt_ptr->getWidth(0);
+  val += cnt_ptr->getSegment(0, index);
+  cnt_ptr->resetSegment(0, index);
+  backup_tbl.insert(std::make_pair((int32_t)index, val));
+}
+
 template <int32_t no_layer, typename T>
 std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    return std::make_pair(it->second, no_layer);
+  }
   size_t cur_bits = cnt_ptr->getWidth(0);
   T result = cnt_ptr->getSegment(0, index);
   int32_t lr;
@@ -673,6 +708,11 @@ template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::clear_cnt(size_t ori_index){
   original_cnt[ori_index] = 0;
   size_t index = (ori_index*pseed)%cNum;
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    backup_tbl.erase(it);
+    return;
+  }
   cnt_ptr->resetSegment(0, index);
   for(int32_t lr = 1;lr<no_layer;++lr){
     size_t gid = index/gNum;
@@ -713,13 +753,6 @@ void Dway<no_layer, T>::decode(){
     decoded_cnt[i] = pr.first;
     cnt_size[i] = accum_bits[pr.second-1]+(pr.second-1)*tag_len;
   }
-  // reported values
-  for(auto kv: report_ofl){
-    int32_t lr = kv.first.first;
-    size_t idx = kv.first.second;
-    T val = kv.second;
-    decoded_cnt[idx]+=val<<accum_bits[lr];
-  }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
     rsz += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr)+tag_len);
@@ -756,23 +789,10 @@ size_t Dway<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
 
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::dumpOfIdx(std::ostream& os) const{
-  std::vector<size_t> ofNum(no_layer, 0);
-  std::vector<std::set<size_t>> index_sets(no_layer);
-  for(auto kv: report_ofl){
-    int32_t lr = kv.first.first;
-    size_t idx = kv.first.second;
-    index_sets[lr].insert(idx);
-  }
+  os << "table size: " << backup_tbl.size() << std::endl;
   for(int32_t lr = 0;lr<no_layer;++lr){
     os << "layer " << lr << " ratio: ";
-    os << index_sets[lr].size() << '/' << cnt_ptr->getCntNo(lr);
-    os << std::endl;
-  }
-  for(int32_t lr = 0;lr<no_layer;++lr){
-    os << "layer " << lr << ": ";
-    for(auto idx:index_sets[lr]){
-      os << idx << ' ';
-    }
+    os << of_num[lr] << '/' << cnt_ptr->getCntNo(lr);
     os << std::endl;
   }
 }

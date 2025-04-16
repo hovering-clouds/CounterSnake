@@ -82,9 +82,9 @@
 [FlowRadar]
 
   [FlowRadar.para]
-    flow_filter_bit = 2080150
+    flow_filter_bit = 3080150
     flow_filter_hash = 10
-    count_table_num = 125510
+    count_table_num = 140510
     count_table_hash = 3
 
   [FlowRadar.test]
