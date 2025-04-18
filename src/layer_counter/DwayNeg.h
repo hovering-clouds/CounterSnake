@@ -178,6 +178,9 @@ public:
  * @brief This class will take care of the addressing process and the random
  * prmutation needed for multi-sketch use case.
  * 
+ * @note This class uses sign-bit encoding to handle negative counters. 
+ * We assume T to be signed integer type in our implementation.
+ * 
  * @tparam T Inner counter type (which should be numerical types).
  */
 template <int32_t no_layer, typename T>
@@ -226,6 +229,11 @@ private:
    */
   std::vector<size_t> di;
   /**
+   * @brief The number of excessive overflows in each layer.
+   * 
+   */
+  std::vector<size_t> of_num;
+  /**
    * @brief Original counters(ground truth)
    *
    */
@@ -243,26 +251,21 @@ private:
   
   std::vector<bool> sign_bits;
   
-  typedef std::pair<int32_t, size_t> seg_idx;
   /**
    * @brief Reported overflow, in the form (layer, index)
    * 
    */
-  std::vector<std::pair<seg_idx, T>> report_ofl;
+  std::map<int32_t, T> backup_tbl;
 
   DwayNeg(const DwayNeg &) = delete;
   DwayNeg(DwayNeg &&) = delete;
   /**
-   * @brief Report overflow to control plane
+   * @brief Record overflow in backup table
    * 
-   * @note The index is the counter index (layer0 index), not the segment index
+   * @note The index is the segment index in the 'layer'-th layer
    * 
    */
-  void report(int32_t layer, size_t index, T val){
-    seg_idx sidx = std::make_pair(layer, index);
-    report_ofl.push_back(std::make_pair(sidx, val));
-    //std::cout << "report overflow at layer "<< layer << ", index "  << index << ", value " << val << std::endl;
-  }
+  void insert_backup(int32_t layer, size_t index, T of_val);
   /**
    * @brief Query a counter and its layer, should be used offline in `decode`
    * 
@@ -272,12 +275,30 @@ private:
   std::pair<T, int32_t> query_with_layer(size_t ori_index);
 
   /**
-   * @brief Update a counter without change on its signbit
+   * @brief Update a counter by adding on its absolute value
    * 
-   * @param ori_index Counter index
+   * @param index Counter index
    * @param val Value to be added
    */
-  void update_no_sign(size_t ori_index, T val);
+  void update_add(size_t index, T val);
+
+  /**
+   * @brief Update a counter by adding on its absolute value
+   * 
+   * @param index Counter index
+   * @param val Value to be added
+   * @param start_lr The starting layer to add
+   */
+  void update_add_start(size_t index, T val, int32_t start_lr);
+
+  /**
+   * @brief Update a counter by subtracting on its absolute value, may cause change on sign bit
+   * 
+   * @param index Counter index
+   * @param val Value to be subtracted, leave it as negative because the counter actually will += val
+   */
+  void update_sub(size_t index, T val);
+
 
   /**
    * @brief Reset the inner counter, will clear the tag
@@ -449,7 +470,7 @@ public:
     size_t err = 0;
     for (size_t i = 0; i < cNum; i++){
       if(original_cnt[i]!=decoded_cnt[i]){
-        std::cout << i << ' ' << original_cnt[i] << ' ' << decoded_cnt[i] << std::endl;
+        //std::cout << i << ' ' << original_cnt[i] << ' ' << decoded_cnt[i] << std::endl;
         num++;
         err += std::abs(original_cnt[i]-decoded_cnt[i]);
       }
@@ -463,6 +484,7 @@ public:
    * 
    */
   void clear(){
+    backup_tbl.clear();
     cnt_ptr->clearAll();
     std::fill_n(original_cnt.begin(), cNum, 0);
     rsz = 0;
@@ -587,7 +609,7 @@ void DwayNeg<no_layer, T>::initCounter( size_t counter_num,
     }
   }
   // initialize permutation seeds
-  int32_t candidate = 31;
+  int32_t candidate = gNum;
   int32_t cNum32 = static_cast<int32_t>(cNum);
   while(true){
     if(Util::IsCoprime(candidate, cNum32)){
@@ -612,38 +634,60 @@ void DwayNeg<no_layer, T>::initCounter( size_t counter_num,
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
   cnt_size.resize(no_cnt[0]);
   std::fill_n(cnt_size.begin(), no_cnt[0], 0);
+  of_num.resize(no_layer);
+  std::fill_n(of_num.begin(), no_layer, 0);
 }
 
 template <int32_t no_layer, typename T>
 void DwayNeg<no_layer, T>::update(size_t ori_index, T val){
   original_cnt[ori_index]+=val;
-  T curval = query_with_layer(ori_index).first;
-#ifdef DEBUG_DWAYNEG
-  assert(curval>=0); // should not overflow
-#endif
   size_t index = (ori_index*pseed)%cNum;
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    it->second += val;
+    return;
+  }
   bool valsign = (val<0);
   T valabs = std::abs(val);
   if(sign_bits[index]!=valsign){
-    if(valabs>curval){ //flip
-      sign_bits[index] = valsign;
-      //reset_inner_cnt(index);
-      update_no_sign(ori_index, valabs-2*curval);
-    } else {
-      //reset_inner_cnt(index);
-      update_no_sign(ori_index, -valabs);
-    }
+    update_sub(index, -valabs);
   } else {
-    update_no_sign(ori_index, valabs);
+    update_add(index, valabs);
   }
 }
 
+template<int32_t no_layer, typename T>
+inline void DwayNeg<no_layer, T>::insert_backup(int32_t layer, size_t index, T of_val)
+{
+  T val = of_val;
+  for(int32_t i = layer; i>0; --i){
+    val <<= cnt_ptr->getWidth(i);
+    val += cnt_ptr->getSegment(i, index);
+    size_t gid = index/di[i];
+    dtag_t tag = cnt_ptr->getTag(i, index);
+    cnt_ptr->setTag(i, index, DTAG_INVALID);
+    cnt_ptr->resetSegment(i, index);
+    index = gid*gNum+(tag-gNum);
+  }
+  val <<= cnt_ptr->getWidth(0);
+  val += cnt_ptr->getSegment(0, index);
+  cnt_ptr->resetSegment(0, index);
+  if(sign_bits[index]){ 
+    val = -val;
+    sign_bits[index] = false;
+  }
+  backup_tbl.insert(std::make_pair((int32_t)index, val));
+}
+
 template <int32_t no_layer, typename T>
-void DwayNeg<no_layer, T>::update_no_sign(size_t ori_index, T val){
-  size_t index = (ori_index*pseed)%cNum;
-  for(int32_t lr = 0;lr<no_layer;++lr){
+void DwayNeg<no_layer, T>::update_add(size_t index, T val){
+  update_add_start(index, val, 0);
+}
+
+template <int32_t no_layer, typename T>
+void DwayNeg<no_layer, T>::update_add_start(size_t index, T val, int32_t start_lr){
+  for(int32_t lr = start_lr;lr<no_layer;++lr){
     T of_val = cnt_ptr->updateSegment(lr, index, val);
-    //std::cout << lr << ' ' << index << ' ' <<of_val << std::endl;
     if(of_val!=0){
       if(lr==no_layer-1){ // last layer should not overflow
         throw std::overflow_error(
@@ -672,9 +716,87 @@ void DwayNeg<no_layer, T>::update_no_sign(size_t ori_index, T val){
           break;
         }
       }
-      // Case 3: unhandled overflow, report to control plane
-      if(!matched){report(lr, ori_index, of_val);break;}
+      // Case 3: excessive overflow, insert into the backup table
+      if(!matched){
+        of_num[lr]++;
+        insert_backup(lr, index, of_val);
+        break;
+      }
     } else {
+      break;
+    }
+  }
+}
+
+template <int32_t no_layer, typename T>
+void DwayNeg<no_layer, T>::update_sub(size_t index, T val){
+  std::vector<size_t> cnt_id;
+  std::vector<T> cnt_val;
+  for(int32_t lr = 0;lr<no_layer;++lr){
+    T of_val = cnt_ptr->updateSegment(lr, index, val);
+    cnt_id.push_back(index);
+    cnt_val.push_back(cnt_ptr->getSegment(lr, index));
+    //std::cout << lr << ' ' << of_val << ' ' << cnt_ptr->getSegment(lr, index) << std::endl;
+    if(of_val!=0){
+      if(lr==no_layer-1){ // last layer should not overflow
+        throw std::overflow_error(
+            "Counter overflow at the last layer in dway counter, overflow by " +
+            std::to_string(of_val) + ".");
+      }
+      val = of_val;
+      size_t gid = index/gNum;
+      dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
+      bool matched = false;
+      for(size_t nextId = gid*di[lr+1]; nextId<(gid+1)*di[lr+1];++nextId){
+        if(cnt_ptr->getTag(lr+1, nextId)==tag){
+          index = nextId;
+          matched = true;
+          break;
+        }
+      }
+      if(!matched){ // The highest layer segment underflows. Sign change
+        //cnt_val.push_back(-of_val);
+        sign_bits[cnt_id[0]] = !sign_bits[cnt_id[0]];
+        of_val = -of_val;
+        T borrow_val = 0;
+        // calculate the values of segments in each layer after sign change
+        for(int32_t i = 0; i<=lr; ++i){
+          T widthi = cnt_ptr->getWidth(i);
+          T neg_val = (1 << widthi) - cnt_val[i] - borrow_val;
+          T new_val = neg_val & ((1 << widthi)-1);
+          cnt_val[i] = new_val;
+          borrow_val = 1 - (neg_val >> widthi); // borrow value from the next layer
+          cnt_ptr->resetSegment(i, cnt_id[i]); // update the segments in the hierarchy
+          cnt_ptr->updateSegment(i, cnt_id[i], new_val); 
+        }
+        of_val -= borrow_val;
+        //std::cout << of_val << ' ' << borrow_val << std::endl;
+        if(of_val>0){
+          update_add_start(index, of_val << cnt_ptr->getWidth(lr), lr);
+        } else { // no overflow, free zero segments in a top-down manner
+          for(int32_t i = lr; i>0 && cnt_ptr->getSegment(i, cnt_id[i])==0; --i){
+            cnt_ptr->setTag(i, cnt_id[i], DTAG_INVALID);
+          }
+        }
+        break;
+      }
+    } else { // no overflow
+      bool matched = false;
+      size_t gid = index/gNum;
+      dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
+      // check if in the highest layer
+      for(size_t nextId = gid*di[lr+1]; nextId<(gid+1)*di[lr+1];++nextId){
+        if(cnt_ptr->getTag(lr+1, nextId)==tag){
+          index = nextId;
+          matched = true;
+          break;
+        }
+      }
+      if(!matched){ // no overflow, in the highest layer, free zero segments in a top-down manner
+        for(int32_t i = lr; i>0 && cnt_ptr->getSegment(i, cnt_id[i])==0; --i){
+          cnt_ptr->setTag(i, cnt_id[i], DTAG_INVALID);
+        }   
+      }
       break;
     }
   }
@@ -683,6 +805,11 @@ void DwayNeg<no_layer, T>::update_no_sign(size_t ori_index, T val){
 template <int32_t no_layer, typename T>
 std::pair<T, int32_t> DwayNeg<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
+  bool neg = sign_bits[index];
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    return std::make_pair(it->second, no_layer);
+  }
   size_t cur_bits = cnt_ptr->getWidth(0);
   T result = cnt_ptr->getSegment(0, index);
   int32_t lr;
@@ -703,24 +830,26 @@ std::pair<T, int32_t> DwayNeg<no_layer, T>::query_with_layer(size_t ori_index){
       break;
     }
   }
+  if(neg){
+    result = -result;
+  }
   return std::make_pair(result, lr);
 }
 
 template <int32_t no_layer, typename T>
 T DwayNeg<no_layer, T>::query(size_t ori_index){
-  size_t index = (ori_index*pseed)%cNum;
-  T val = query_with_layer(ori_index).first;
-  if(sign_bits[index]){
-    return -val;
-  } else {
-    return val;
-  }
+  return query_with_layer(ori_index).first;
 }
 
 template <int32_t no_layer, typename T>
 void DwayNeg<no_layer, T>::clear_cnt(size_t ori_index){
   original_cnt[ori_index] = 0;
   size_t index = (ori_index*pseed)%cNum;
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    backup_tbl.erase(it);
+    return;
+  }
   reset_inner_cnt(index);
 }
 
@@ -763,20 +892,8 @@ void DwayNeg<no_layer, T>::decode(){
   // decoded values
   for(size_t i = 0;i<cNum;++i){
     std::pair<T, size_t> pr = query_with_layer(i);
-    size_t index = (i*pseed)%cNum;
-    if(sign_bits[index]){
-      decoded_cnt[i] = -pr.first;
-    } else {
-      decoded_cnt[i] = pr.first;
-    }
-    cnt_size[i] = accum_bits[pr.second-1]+(pr.second-1)*tag_len;
-  }
-  // reported values
-  for(auto kv: report_ofl){
-    int32_t lr = kv.first.first;
-    size_t idx = kv.first.second;
-    T val = kv.second;
-    decoded_cnt[idx]+=val<<accum_bits[lr];
+    decoded_cnt[i] = pr.first;
+    cnt_size[i] = accum_bits[pr.second-1]+(pr.second-1)*tag_len+1;
   }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
@@ -814,23 +931,10 @@ size_t DwayNeg<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
 
 template <int32_t no_layer, typename T>
 void DwayNeg<no_layer, T>::dumpOfIdx(std::ostream& os) const{
-  std::vector<size_t> ofNum(no_layer, 0);
-  std::vector<std::set<size_t>> index_sets(no_layer);
-  for(auto kv: report_ofl){
-    int32_t lr = kv.first.first;
-    size_t idx = kv.first.second;
-    index_sets[lr].insert(idx);
-  }
+  os << "table size: " << backup_tbl.size() << std::endl;
   for(int32_t lr = 0;lr<no_layer;++lr){
     os << "layer " << lr << " ratio: ";
-    os << index_sets[lr].size() << '/' << cnt_ptr->getCntNo(lr);
-    os << std::endl;
-  }
-  for(int32_t lr = 0;lr<no_layer;++lr){
-    os << "layer " << lr << ": ";
-    for(auto idx:index_sets[lr]){
-      os << idx << ' ';
-    }
+    os << of_num[lr] << '/' << cnt_ptr->getCntNo(lr);
     os << std::endl;
   }
 }

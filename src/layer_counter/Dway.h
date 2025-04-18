@@ -255,9 +255,9 @@ private:
   Dway(const Dway &) = delete;
   Dway(Dway &&) = delete;
   /**
-   * @brief Report overflow to control plane
+   * @brief Record overflow in backup table
    * 
-   * @note The index is the counter index (layer0 index), not the segment index
+   * @note The index is the segment index in the 'layer'-th layer
    * 
    */
   void insert_backup(int32_t layer, size_t index, T of_val);
@@ -445,6 +445,7 @@ public:
    * 
    */
   void clear(){
+    backup_tbl.clear();
     cnt_ptr->clearAll();
     std::fill_n(original_cnt.begin(), cNum, 0);
     rsz = 0;
