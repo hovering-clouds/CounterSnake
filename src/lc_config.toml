@@ -10,6 +10,15 @@
     width_cnt = [8, 8, 16]
     dway = [0, 16, 1]
 
+  [Lc.dwayneg]
+    sketch = ["CS"]
+    data = "../data/data-100K-1.bin"
+    cnt_method = "InPacket"
+    group_num = 256
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 10, 16]
+    dway = [0, 4, 1]
+
   [Lc.brick]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM","FR","ES"]

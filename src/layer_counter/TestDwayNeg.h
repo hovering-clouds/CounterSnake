@@ -20,11 +20,11 @@
 #include <sketch_test/LcMVTest.h>
 #include <sketch_test/LcSLTest.h>
 
-#define LC_CONFIG_PATH "Lc.dway"
+#define LC_CONFIG_PATH "Lc.dwayneg"
 
 #define KEYLEN 13 // 不同的key_type可以共享在一起，但是受限于实现方法暂时控制住
 #define COUNTER_TYPR int32_t // 不同的counter_type不应共享在一起
-#define LAYERNUM 4 // 层数需要与config文件中一致
+#define LAYERNUM 3 // 层数需要与config文件中一致
 
 namespace OmniSketch::Test {
 
@@ -81,7 +81,7 @@ void TestDwayNeg::initPtr(toml::array& sketch_list,
       testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway MVSketch", config_file, data, cnt_method));
     } else if(str.compare("SL")==0){ //SketchLearn
       testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway SketchLearn", config_file, data, cnt_method));
-    } else if(str.compare("CS")==0){ //CMHeap
+    } else if(str.compare("CS")==0){ //CountSketch
       testPtr.push_back(std::make_unique<LcCSTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Dway CountSketch", config_file, data, cnt_method));
     }
   }
@@ -152,11 +152,11 @@ void TestDwayNeg::runTest() {
   //std::ofstream outf("tmpCnt.txt", std::ios::out);
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
   std::ofstream outf3("tmpFree.txt", std::ios::out);
-  //std::ofstream outf4("tmpOfIdx.txt", std::ios::out);
+  std::ofstream outf4("tmpOfIdx.txt", std::ios::out);
   //counter.dumpCnt(outf);
   //counter.dumpOri(outf2);
   counter.dumpFreeCnt(outf3);
-  //counter.dumpOfIdx(outf4);
+  counter.dumpOfIdx(outf4);
   counter.validate();
   std::cout << "mem consumption of counters: "<< counter.bsize()/1024 << " KB." << std::endl;
   std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
