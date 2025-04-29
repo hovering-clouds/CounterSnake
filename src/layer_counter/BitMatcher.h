@@ -39,27 +39,36 @@ private:
   uint8_t exist;
   // contains several counters and their fingerprints, arranged in the order of their sizes 
   uint64_t counters;
-  static const int counter_num[] = {5, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, -1};
-  static const int layout[][6] = {{0, 10, 21, 33, 46, 60}, {0, 11, 23, 36, 60, -1}, {0, 12, 25, 39, 60, -1}, {0, 13, 27, 42, 60, -1},
-                                  {0, 12, 25, 60, -1, -1}, {0, 13, 27, 60, -1, -1}, {0, 14, 29, 60, -1, -1}, {0, 15, 31, 60, -1, -1}, 
-                                  {0, 16, 33, 60, -1, -1}, {0, 17, 35, 60, -1, -1}, {0, 18, 37, 60, -1, -1}, {0, 19, 39, 60, -1, -1}};
+  static inline const int counter_num[13] = {5, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, -1};
+  static inline const int layout[12][6] = {{0, 10, 21, 33, 46, 60}, {0, 11, 23, 36, 60, -1}, {0, 12, 25, 39, 60, -1}, {0, 13, 27, 42, 60, -1},
+                                    {0, 12, 25, 60, -1, -1}, {0, 13, 27, 60, -1, -1}, {0, 14, 29, 60, -1, -1}, {0, 15, 31, 60, -1, -1}, 
+                                    {0, 16, 33, 60, -1, -1}, {0, 17, 35, 60, -1, -1}, {0, 18, 37, 60, -1, -1}, {0, 19, 39, 60, -1, -1}};
   
   void setBits(uint32_t start, uint32_t end, uint64_t val){
     assert(start<end && start<64 && end<64);
     uint64_t shft_val = val << start;
     uint64_t mask = ((uint64_t(1) << (end-start)) - 1) << start;
     counters &= ~mask; // reset the counter to 0
-    shft_val &= ~mask; // trim to only `end-start` bits
+    shft_val &= mask; // trim to only `end-start` bits
     counters |= shft_val;
   }
 
-  uint64_t getBits(uint32_t start, uint32_t end){
+  uint64_t getBits(uint32_t start, uint32_t end) const {
     assert(start<end && start<64 && end<64);
     uint64_t mask = (1 << (end-start)) - 1;
     return (counters >> start) & mask;
   }
 
-  bool is_exist(int32_t pos){
+  T getBitsVal(uint32_t start, uint32_t end) const {
+    uint64_t bits = getBits(start, end);
+    T val = T(bits);
+    int32_t leading_zeros = 8*sizeof(T)-(end-start);
+    val <<= leading_zeros;
+    val >>= leading_zeros;
+    return val;
+  }
+
+  bool is_exist(int32_t pos) const {
     return (exist >> pos) & 1;
   }
 
@@ -82,20 +91,20 @@ public:
       if(val==0){
         return 1;
       } else {
-        return floor(log(val))+2;
+        return floor(log2(val))+2;
       }
     } else {
       // for an n-bit unsigned integer, range [0, 2^{n}-1]
       if(val==0){
         return 1;
       } else {
-        return floor(log(val))+1;
+        return floor(log2(val))+1;
       }
     }
   }
 
   Bucket(){
-    falg = 0;
+    flag = 0;
     exist = 0;
     counters = 0;
   }
@@ -194,7 +203,7 @@ public:
    * @brief Get the memory usage of this bucket in bytes.
    * 
    */
-  static size_t bsize() const{
+  static size_t bsize(){
     return (64+8)/8;
   }
 
@@ -341,7 +350,7 @@ public:
     original_cnt[index] = 0;
     size_t bktIdx1 = hash_fn(index)%bNum;
     uint8_t fp = (index*pseed)%256;
-    size_t bktIdx2 = bktIdx1^fp;
+    size_t bktIdx2 = (bktIdx1^fp)%bNum;
     buckets.at(bktIdx1).setCounter(fp, 0);
     buckets.at(bktIdx1).setCounter(fp, 0);
   }
@@ -360,7 +369,7 @@ public:
   T query(size_t index) override{
     size_t bktIdx1 = hash_fn(index)%bNum;
     uint8_t fp = (index*pseed)%256;
-    size_t bktIdx2 = bktIdx1^fp;
+    size_t bktIdx2 = (bktIdx1^fp)%bNum;
     T result;
     if(buckets.at(bktIdx1).queryCounter(fp, result)){
       return result;
@@ -376,10 +385,10 @@ public:
    * @param len Counter size
    * @return The counter value
    */
-  T queryWithSize(size_t index, size_t &len) override{
+  T queryWithSize(size_t index, size_t &len){
     size_t bktIdx1 = hash_fn(index)%bNum;
     uint8_t fp = (index*pseed)%256;
-    size_t bktIdx2 = bktIdx1^fp;
+    size_t bktIdx2 = (bktIdx1^fp)%bNum;
     Bucket<T> &bkt1 = buckets.at(bktIdx1);
     Bucket<T> &bkt2 = buckets.at(bktIdx2);
     T result;
@@ -421,8 +430,8 @@ public:
    * @param index Counter index
    * @return T& The counter reference
    */
-  T& operator[](size_t ori_index){
-    return decoded_cnt[cIdx];
+  T& operator[](size_t index){
+    return decoded_cnt[index];
   }
   /**
    * @brief Get memory consumption of this BitMatcher in bytes
@@ -444,13 +453,17 @@ public:
   size_t getcNum() const{
     return cNum;
   }
+
+  size_t getFailureNum() const{
+    return failure_num;
+  }
   /**
    * @brief Dump decoded counters to ostream
    * 
    */
   void dumpCnt(std::ostream& os) const{
     for (size_t i = 0; i < cNum; i++){
-      os << decoded_cnt[i] << ' '
+      os << decoded_cnt[i] << ' ';
       if(i%100==99){
         os << std::endl;
       }
@@ -462,7 +475,7 @@ public:
    */
   void dumpOri(std::ostream& os) const{
     for (size_t i = 0; i < cNum; i++){
-      os << original_cnt[i] << ' '
+      os << original_cnt[i] << ' ';
       if(i%100==99){
         os << std::endl;
       }
@@ -515,7 +528,7 @@ bool Bucket<T>::updateCounter(const uint8_t fingerprint, const T val){
     int end = layout[flag][i+1];
     uint8_t fp = getBits(start, start+8);
     if(fingerprint==fp){
-      T old_val = getBits(start+8, end);
+      T old_val = getBitsVal(start+8, end);
       T new_val = old_val + val;
       setBits(start+8, end, new_val);
       return true;
@@ -535,7 +548,7 @@ bool Bucket<T>::queryCounter(const uint8_t fingerprint, T &result){
     int end = layout[flag][i+1];
     uint8_t fp = getBits(start, start+8);
     if(fingerprint==fp){
-      result = getBits(start+8, end);
+      result = getBitsVal(start+8, end);
       return true;
     }
   }
@@ -553,7 +566,7 @@ int32_t Bucket<T>::queryWithPos(const uint8_t fingerprint, T &result){
     int end = layout[flag][i+1];
     uint8_t fp = getBits(start, start+8);
     if(fingerprint==fp){
-      result = getBits(start+8, end);
+      result = getBitsVal(start+8, end);
       return i;
     }
   }
@@ -564,7 +577,7 @@ template <typename T>
 bool Bucket<T>::insertCounter(const uint8_t fingerprint, T initial_val){
   int bits = calculate_bits(initial_val);
   int cnt_num = counter_num[flag];
-  for(int i = 0;i<counter_num;++i){
+  for(int i = 0;i<cnt_num;++i){
     int start = layout[flag][i];
     int end = layout[flag][i+1];
     if(is_exist(i)||(end-start)<bits){
@@ -644,7 +657,7 @@ bool Bucket<T>::compress(){
   int cnt_num = counter_num[flag];
   int start_l = layout[flag][cnt_num-1];
   int end_l = layout[flag][cnt_num];
-  T largest_cnt = getBits(start_l+8, end_l);
+  T largest_cnt = getBitsVal(start_l+8, end_l);
   int bits = end_l-start_l-8-calculate_bits(largest_cnt);
   if(bits>=cnt_num-1){ // can be compressed
     std::vector<uint8_t> fps;
@@ -653,7 +666,7 @@ bool Bucket<T>::compress(){
       int start = layout[flag][i];
       int end = layout[flag][i+1];
       fps.push_back(getBits(start, start+8));
-      vals.push_back(getBits(start+8, end));
+      vals.push_back(getBitsVal(start+8, end));
     }
     flag++;
     for(int i = 0;i<cnt_num;++i){ // rearrange the recorded values
@@ -679,7 +692,7 @@ bool Bucket<T>::sacrifice(uint8_t &fingerprint, T &value){
     int start = layout[flag][i];
     int end = layout[flag][i+1];
     fps.push_back(getBits(start, start+8));
-    vals.push_back(getBits(start+8, end));
+    vals.push_back(getBitsVal(start+8, end));
   }
   if(flag==0){
     flag++;
@@ -695,7 +708,7 @@ bool Bucket<T>::sacrifice(uint8_t &fingerprint, T &value){
     setBits(start, start+8, fps[i+1]);
     setBits(start+8, end, vals[i+1]);
   }
-  fingerprint = fp[0];
+  fingerprint = fps[0];
   value = vals[0];
   return exist_smallest;
 }
@@ -706,7 +719,7 @@ template <typename T>
 void BitMatcher<T>::initBucket(size_t counter_num, size_t bucket_num){
   cNum = counter_num;
   bPow = Util::Next2Pow(bucket_num);
-  bNum = 1<<bpow;
+  bNum = 1<<bPow;
   rsz = 0;
   failure_num = 0;
   int32_t candidate = 31;
@@ -735,7 +748,7 @@ void BitMatcher<T>::sacrifice_smallest(size_t bktId){
   T val;
   bool kick_out = bkt.sacrifice(fp, val);
   if(kick_out){
-    Bucket<T> &bkt_other = buckets.at(bktId^fp);
+    Bucket<T> &bkt_other = buckets.at((bktId^fp)%bNum);
     bool suc = bkt_other.insertCounter(fp, val);
     if(!suc){failure_num++;}
   }
@@ -744,7 +757,7 @@ void BitMatcher<T>::sacrifice_smallest(size_t bktId){
 template <typename T>
 void BitMatcher<T>::kickout(size_t bktId, uint8_t fp){
   Bucket<T> &bkt = buckets.at(bktId);
-  Bucket<T> &bkt_other = buckets.at(bktId^fp);
+  Bucket<T> &bkt_other = buckets.at((bktId^fp)%bNum);
   T val;
   int32_t pos = bkt.queryWithPos(fp, val);
   if(pos!=-1){
@@ -792,6 +805,7 @@ void BitMatcher<T>::update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_va
 
 template <typename T>
 void BitMatcher<T>::update(size_t index, T val){
+  original_cnt[index] += val;
   uint8_t fp = (index*pseed)%256;
   uint64_t hashval = hash_fn(index);
   Bucket<T> &bkt1 = buckets.at(hashval%bNum);
@@ -851,8 +865,8 @@ size_t BitMatcher<T>::csize(const std::vector<size_t>& idxs) const{
   for(auto index:idxs){
     uint8_t fp = (index*pseed)%256;
     uint64_t hashval = hash_fn(index);
-    Bucket<T> &bkt1 = buckets.at(hashval%bNum);
-    Bucket<T> &bkt2 = buckets.at((hashval^fp)%bNum);
+    const Bucket<T> &bkt1 = buckets.at(hashval%bNum);
+    const Bucket<T> &bkt2 = buckets.at((hashval^fp)%bNum);
     result += bkt1.csize(fp);
     result += bkt2.csize(fp);
   }
