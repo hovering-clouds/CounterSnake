@@ -57,6 +57,11 @@ bool IsPrime(int32_t n);
  */
 int32_t NextPrime(int32_t n);
 /**
+ * @brief Find the smallest 2's power that are not less than n. Assume n is at most 2^32-1.
+ * 
+ */
+int32_t Next2Pow(size_t n);
+/**
  * @brief Extended Euclidean algorithm
  * 
  * @param m first number

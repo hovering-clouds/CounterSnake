@@ -40,6 +40,15 @@ int32_t NextPrime(int32_t n) {
   return n;
 }
 
+int32_t Next2Pow(size_t n) {
+  for(int32_t i = 0;i<32;++i){
+    if((1<<i) >= n){
+      return i;
+    }
+  }
+  return 32;
+}
+
 int32_t ExtendedGCD(int32_t m, int32_t n, int32_t& x, int32_t& y){
   assert(m>=0 && n>=0);
   if (m==0){
