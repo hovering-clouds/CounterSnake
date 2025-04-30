@@ -191,7 +191,9 @@ Data::Estimation<key_len, T> LcFlowRadar<key_len, no_layer, T, hash_t>::decode()
       count_table[l].flow_count--;
       count_table[l].packet_count -= size;
       count_table[l].flowXOR ^= flowkey;
-      set.insert(count_table + l);
+      if(count_table[l].flow_count>0){
+        set.insert(count_table + l);
+      }
     }
     est[flowkey] = size;
   }
