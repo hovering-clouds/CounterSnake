@@ -180,11 +180,11 @@ public:
    * @brief Get the numbre of counters in this bucket
    * 
    */
-  int32_t getCntNum(){
+  int32_t getCntNum() const{
     return counter_num[flag];
   }
 
-  int32_t getCntLen(int32_t pos){
+  int32_t getCntLen(int32_t pos) const{
     return layout[flag][pos+1]-layout[flag][pos]-8;
   }
 
@@ -198,6 +198,10 @@ public:
 
   bool isCompressLimit(){
     return counter_num[flag+1]<counter_num[flag];
+  }
+
+  bool isSacrificeLimit(){
+    return flag>3;
   }
   /**
    * @brief Get the memory usage of this bucket in bytes.
@@ -221,6 +225,33 @@ public:
    */
   size_t rsize() const;
 
+  void dump(std::ostream& os) const {
+    int32_t cnt_num = getCntNum();
+    os << "exist: ";
+    for(int i = 0;i<cnt_num;++i){
+      os << is_exist(i) << ' ';
+    }
+    os << std::endl << "len: ";
+    for(int i = 0;i<cnt_num;++i){
+      os << getCntLen(i) << ' ';
+    }
+    os << std::endl << "fp: ";
+    for(int i = 0;i<cnt_num;++i){
+      int start = layout[flag][i];
+      int end = layout[flag][i+1];
+      int fp = getBits(start, start+8);
+      os << fp << ' ';
+    }
+    os << std::endl << "val: ";
+    for(int i = 0;i<cnt_num;++i){
+      int start = layout[flag][i];
+      int end = layout[flag][i+1];
+      T val = getBitsVal(start+8, end);
+      os << val << ' ';
+    }
+    os << std::endl;
+    return;
+  }
   /**
    * @brief Clear all the counters
    * 
@@ -298,7 +329,7 @@ class BitMatcher : public LayerCounter<0, T> {
   BitMatcher(const BitMatcher &) = delete;
   BitMatcher(BitMatcher &&) = delete;
 
-  void sacrifice_smallest(size_t bktId);
+  bool sacrifice_smallest(size_t bktId);
   void kickout(size_t bktId, uint8_t fp);
   void update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_val);
 public:
@@ -491,12 +522,24 @@ public:
     for (size_t i = 0; i < cNum; i++){
       if(getOriCnt(i)!=getCnt(i)){
         num++;
-        err += std::abs(getOriCnt(i)!=getCnt(i));
+        err += std::abs(getOriCnt(i)-getCnt(i));
       }
     }
+    /*std::vector<int32_t> hash_cnt(bNum, 0);
+      for (size_t i = 0;i<cNum;++i){
+        hash_cnt[hash_fn(i)%bNum]++;
+      }
+      for (size_t i = 0;i<bNum;++i){
+        std::cout << hash_cnt[i] << " ";
+        if(i%100==99){
+          std::cout << std::endl;
+      }
+    }*/
+    std::cout << "cNum: " << cNum << " bNum: " << bNum << std::endl;
+    std::cout << "failure num: " << failure_num << std::endl;
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
-    std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+    std::cout << "Counter AAE: " << (double)err/cNum << std::endl;
   }
   /**
    * @brief Clear the counters
@@ -580,7 +623,7 @@ bool Bucket<T>::insertCounter(const uint8_t fingerprint, T initial_val){
   for(int i = 0;i<cnt_num;++i){
     int start = layout[flag][i];
     int end = layout[flag][i+1];
-    if(is_exist(i)||(end-start)<bits){
+    if(is_exist(i)||(end-start-8)<bits){
       continue;
     }
     // find one empty counter that has enough bits
@@ -722,6 +765,7 @@ void BitMatcher<T>::initBucket(size_t counter_num, size_t bucket_num){
   bNum = 1<<bPow;
   rsz = 0;
   failure_num = 0;
+  hash_fn = Hash::AwareHash();
   int32_t candidate = 31;
   int32_t cNum32 = static_cast<int32_t>(cNum);
   while(true){
@@ -742,16 +786,18 @@ void BitMatcher<T>::initBucket(size_t counter_num, size_t bucket_num){
 }
 
 template <typename T>
-void BitMatcher<T>::sacrifice_smallest(size_t bktId){
+bool BitMatcher<T>::sacrifice_smallest(size_t bktId){
   Bucket<T> &bkt = buckets.at(bktId);
   uint8_t fp;
   T val;
+  if(bkt.isSacrificeLimit()){return false;}
   bool kick_out = bkt.sacrifice(fp, val);
   if(kick_out){
     Bucket<T> &bkt_other = buckets.at((bktId^fp)%bNum);
     bool suc = bkt_other.insertCounter(fp, val);
     if(!suc){failure_num++;}
   }
+  return true;
 }
 
 template <typename T>
@@ -777,14 +823,16 @@ void BitMatcher<T>::update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_va
     if(suc){ // case1: swap this counter into a larger one in this bucket
       bkt.freeCounter(pos);
     } else if(bkt.isMaxCnt(pos)){ // case2: counter_max overflow, then sacrifice
-      sacrifice_smallest(bktId);
+      bool can_sacr = sacrifice_smallest(bktId);
+      if(!can_sacr){failure_num++; return;}
       update_exist(bktId, pos-1, fp, new_val); // recursively update, in case one sacrifice not enough
       // bkt.setCounter(fp, new_val);
     } else if(bkt.isCompressLimit()){ // case3: Y maximum
       if(bkt.isMinCnt(pos)){ // case3-1: the smallest counter overflows, kick out
         kickout(bktId, fp);
       } else { // case3-2: other counters overflow, sacrifice smallest counter and then compress
-        sacrifice_smallest(bktId);
+        bool can_sacr = sacrifice_smallest(bktId);
+        if(!can_sacr){failure_num++; return;}
         bkt.compress(); // must succeed
         update_exist(bktId, pos-1, fp, new_val);
         // bkt.setCounter(fp, new_val);

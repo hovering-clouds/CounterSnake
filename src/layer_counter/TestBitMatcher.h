@@ -85,7 +85,7 @@ void TestBitMatcher::initPtr(toml::array& sketch_list,
 }
 
 void TestBitMatcher::runTest() {
-  srand(20250429);
+  srand(20250430);
   /// step i: parse ACS param
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;
@@ -141,7 +141,7 @@ void TestBitMatcher::runTest() {
     ptr->runTest();
   }
   //std::cout << "overflow: " << counter.getOfNum() << std::endl;
-  //counter.validate();
+  counter.validate();
   //std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   //std::cout << counter.bsize() << std::endl;
   //std::ofstream outf("tmpCnt.txt", std::ios::out);

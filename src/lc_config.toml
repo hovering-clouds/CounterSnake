@@ -27,6 +27,13 @@
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [8, 8, 16]
     no_cnt = [64, 4, 1]
+  
+  [Lc.bitmatcher]
+    sketch = ["CM", "FR"]
+    data = "../data/data-100K-1.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    bkt_rate = 3.0
 
   [Lc.pyramid]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
