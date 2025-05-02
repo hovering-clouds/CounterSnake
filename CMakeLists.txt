@@ -124,3 +124,5 @@ add_executable(Bitsense ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestBitsen
 target_link_libraries(Bitsense OmniTools)
 add_executable(BitMatcher ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestBitMatcher.cpp)
 target_link_libraries(BitMatcher OmniTools)
+add_executable(Sac ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestSac.cpp)
+target_link_libraries(Sac OmniTools)
