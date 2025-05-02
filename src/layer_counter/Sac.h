@@ -78,6 +78,9 @@ public:
     counter = 0;
   }
 
+  bool is_ovf() const {
+    return findSplit()==len-1;
+  }
   /**
    * @brief Find the position of the split bit 
    * 
@@ -138,6 +141,11 @@ class Sac : public LayerCounter<0, T> {
    * 
    */
   size_t cNum;
+  /**
+   * @brief The number of overflowed counters
+   * 
+   */
+  size_t ofNum;
   /**
    * @brief The length of each counter in bits
    * 
@@ -263,9 +271,12 @@ public:
   size_t bsize() const{
     return (cnt_len+1)*cNum/8;
   }
-
+  /**
+   * @brief Get the memory usage of the given counters, return in bits
+   * 
+   */
   size_t csize(const std::vector<size_t>& idxs) const override{
-    return (cnt_len+1)*idxs.size()/8;
+    return (cnt_len+1)*idxs.size();
   }
 
   /**
@@ -313,7 +324,7 @@ public:
         err += std::abs(getOriCnt(i)-getCnt(i));
       }
     }
-    std::cout << "cNum: " << cNum << std::endl;
+    std::cout << "overflow: " << ofNum <<"/" << cNum << std::endl;
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter AAE: " << (double)err/cNum << std::endl;
@@ -323,6 +334,7 @@ public:
    * 
    */
   void clear(){
+    ofNum = 0;
     for (size_t i = 0; i < cNum; i++){
       counters.clear();
     }
@@ -457,6 +469,7 @@ void Sac<T>::decode(){
 #endif
   for (size_t i = 0; i < cNum; i++){
     decoded_cnt[i] = query(i);
+    if(counters[i].is_ovf()){ofNum++;}
   }
 #ifdef TEST_DECODE_TIME
   MY_TOCK = std::chrono::steady_clock::now();

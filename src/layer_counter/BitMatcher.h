@@ -474,7 +474,10 @@ public:
   size_t rsize() const{
     return rsz;
   }
-
+  /**
+   * @brief Get the memory usage of the given counters, return in bits
+   * 
+   */
   size_t csize(const std::vector<size_t>& idxs) const override;
 
   /**
