@@ -574,12 +574,11 @@ void TestBase<key_len, T>::testQuery(
     T estimated_size = ptr_sketch->query(kv.get_left());
     STOP_TIMER;
     // update RE, AE, Correct Rate, PODF
-    double RE = static_cast<double>(std::abs(kv.get_right() - estimated_size)) /
-                kv.get_right();
+    double RE = std::abs(static_cast<double>(kv.get_right()) - estimated_size) / kv.get_right();
     if (RE <= metric_vec.podf)
       podf_cnt += 1.0;
     ARE += RE;
-    AAE += std::abs(kv.get_right() - estimated_size);
+    AAE += std::abs(static_cast<double>(kv.get_right()) - estimated_size);
     if (record_val) {
       outf << kv.get_right() << ' ' << estimated_size << std::endl;
     }
@@ -676,9 +675,7 @@ void TestBase<key_len, T>::testHeavyHitter(
       if(record_val)
         outf << "TP: " << kv.get_left() << ' ' << kv.get_right() << ' ' << detected.at(kv.get_left()) << std::endl;
       TP += 1.0;
-      ARE += static_cast<double>(
-                 std::abs(detected.at(kv.get_left()) - kv.get_right())) /
-             kv.get_right();
+      ARE += std::abs(static_cast<double>(detected.at(kv.get_left())) - kv.get_right()) / kv.get_right();
     } else {
       if(record_val)
         outf << "FN: " << kv.get_left() << ' ' << kv.get_right() << std::endl;
@@ -743,9 +740,7 @@ void TestBase<key_len, T>::testHeavyChanger(
   for (const auto &kv : gnd_truth_heavy_changers) {
     if (detected.count(kv.get_left())) {
       TP += 1.0;
-      ARE += static_cast<double>(
-                 std::abs(detected.at(kv.get_left()) - kv.get_right())) /
-             kv.get_right();
+      ARE += std::abs(static_cast<double>(detected.at(kv.get_left())) - kv.get_right()) / kv.get_right();
     } else {
       FN += 1.0;
     }
@@ -794,11 +789,11 @@ void TestBase<key_len, T>::testDecode(
       decoded_flows += 1.0;
       T true_size = gnd_truth.at(kv.get_left());
       double RE =
-          static_cast<double>(std::abs(true_size - kv.get_right())) / true_size;
+          std::abs(static_cast<double>(true_size) - kv.get_right()) / true_size;
       if (RE <= metric_vec.podf)
         podf_cnt += 1.0;
       ARE += RE;
-      AAE += std::abs(true_size - kv.get_right());
+      AAE += std::abs(static_cast<double>(true_size) - kv.get_right());
       corr += (kv.get_right() == true_size);
       // update Distribution
       if (measure_dist) {

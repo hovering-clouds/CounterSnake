@@ -126,3 +126,5 @@ add_executable(BitMatcher ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestBitM
 target_link_libraries(BitMatcher OmniTools)
 add_executable(Sac ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestSac.cpp)
 target_link_libraries(Sac OmniTools)
+add_executable(Stingy ${CMAKE_CURRENT_SOURCE_DIR}/src/layer_counter/TestStingy.cpp)
+target_link_libraries(Stingy OmniTools)

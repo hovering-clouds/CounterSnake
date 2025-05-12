@@ -159,6 +159,20 @@ bool ConfigParser::parse(int32_t &arg, const std::string_view arg_name,
   return true;
 }
 
+bool ConfigParser::parse(uint32_t &arg, const std::string_view arg_name,
+                         const bool error_logging) const {
+  toml::node_view term = node[arg_name];
+  if (!term.is_integer()) {
+    if (error_logging) {
+      LOG(ERROR,
+          fmt::format("Fail to parse \"{}\" as type `int32_t`.", arg_name));
+    }
+    return false;
+  }
+  arg = static_cast<uint32_t>(term.as_integer()->get());
+  return true;
+}
+
 bool ConfigParser::parse(size_t &arg, const std::string_view arg_name,
                          const bool error_logging) const {
   toml::node_view term = node[arg_name];

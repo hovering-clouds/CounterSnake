@@ -42,6 +42,12 @@
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     cnt_len = 8
 
+  [Lc.stingy]
+    sketch = ["CM"]
+    data = "../data/data-100K-1.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+
   [Lc.pyramid]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM","FR","ES"]

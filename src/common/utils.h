@@ -157,6 +157,13 @@ class ConfigParser {
    *
    * @return `true` on success; `false` otherwise.
    */
+  bool parse(uint32_t &arg, const std::string_view arg_name,
+             const bool error_logging) const;
+  /**
+   * @brief Workhouse of parseConfig
+   *
+   * @return `true` on success; `false` otherwise.
+   */
   bool parse(size_t &arg, const std::string_view arg_name,
              const bool error_logging) const;
   /**
