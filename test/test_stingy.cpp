@@ -18,16 +18,16 @@ void TestStingyUtility() {
   bkt.cnt_array[0][2] = 3;
   VERIFY(bkt.get_nonempty_child(1,0)==0);
   VERIFY(bkt.get_nonempty_child(1,1)==2);
-  VERIFY(bkt.check_parent_empty(0,0));
-  VERIFY(bkt.check_sibling_empty(0,0));
-  VERIFY(!bkt.check_sibling_empty(0,1));
+  VERIFY(!bkt.check_parent_non_empty(0,0));
+  VERIFY(!bkt.check_sibling_non_empty(0,0));
+  VERIFY(bkt.check_sibling_non_empty(0,1));
   bkt.kick_out(0); // kickout to 0,2
   VERIFY(bkt.cnt_array[0][0]==KICK_TAG);
   VERIFY(bkt.cnt_array[0][2]==4); // become the sum
   bkt.cnt_array[0][0] = NULL_VAL;
   bkt.cnt_array[0][1] = 3;
   bkt.cnt_array[1][0] = 2;
-  bkt.kick_out(1,0); //  (0,1) to (0,3), (0,2) to (0,0)
+  bkt.kick_out_mid(1,0,false); //  (0,1) to (0,3), (0,2) to (0,0)
   VERIFY(bkt.cnt_array[0][0]==4);
   VERIFY(bkt.cnt_array[1][1]==2);
   VERIFY(bkt.cnt_array[0][3]==3);
