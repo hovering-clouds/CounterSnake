@@ -20,7 +20,7 @@ void TestStingyUtility() {
   VERIFY(bkt.get_nonempty_child(1,1)==2);
   VERIFY(bkt.check_parent_empty(0,0));
   VERIFY(bkt.check_sibling_empty(0,0));
-  VERIFY(!bkt.check_sibling_empty(1,1));
+  VERIFY(!bkt.check_sibling_empty(0,1));
   bkt.kick_out(0); // kickout to 0,2
   VERIFY(bkt.cnt_array[0][0]==KICK_TAG);
   VERIFY(bkt.cnt_array[0][2]==4); // become the sum
@@ -45,16 +45,11 @@ void TestStingySetQuery() {
   VERIFY(!bkt.set_counter(1, 1)); // fail because parent non-empty
   VERIFY(bkt.set_counter(3,2));
   VERIFY(bkt.cnt_array[0][3]==3);
-  VERIFY(bkt.set_counter(2, 64)); // (3->2), kickout 3 to 5, then kick 2 to 4, then kick 5 to 7
-  VERIFY(bkt.cnt_array[0][2]==KICK_TAG); // counter 3 is kicked out to 5
-  VERIFY(bkt.cnt_array[0][3]==KICK_TAG); // counter 3 is kicked out to 5
-  VERIFY(bkt.cnt_array[0][5]==KICK_TAG); // counter 3 is kicked out to 5
+  VERIFY(!bkt.set_counter(2, 64)); // then fail
   VERIFY(bkt.query(0)==256);
   VERIFY(bkt.query(3)==2);
-  VERIFY(bkt.query(5)==2);
-  VERIFY(bkt.query(7)==2);
-  VERIFY(bkt.query(2)==64);
-  VERIFY(bkt.query(4)==64);
+  VERIFY(bkt.query(5)==0);
+  VERIFY(bkt.query(7)==0);
   std::cout << "pass test_stingy_set_query" << std::endl;
 }
 
@@ -63,8 +58,8 @@ void TestStingyUpdateQuery() {
   bkt.pseed = 2;
   bkt.update(0,256); // (9->2->2)
   bkt.update(1, 1); // kickout to 3
-  bkt.update(2, 64); // kickout 3 to 5, then kick 2 to 4, then kick 5 to 7
-  bkt.update(3, 61); // (1->2) overflow from (0, 7) to (1, 3)
+  bkt.update(2, 64); // kick 2 to 4
+  bkt.update(3, 61); // kick 3 to 5 then to 7
   bkt.update(5, 1); // (2->2)
   bkt.update(6, 2); // kickout to 0
   VERIFY(bkt.query(0)==258);
@@ -90,7 +85,6 @@ void TestStingyUpdateQuery() {
   VERIFY(bkt.getCnt(2)==64); 
   VERIFY(bkt.getCnt(3)==0);
   VERIFY(bkt.getCnt(5)==63);
-  std::cout << "pass test_stingy_update_query" << std::endl;
   VERIFY(bkt.size_cnt[0]==10);
   VERIFY(bkt.size_cnt[1]==6);
   VERIFY(bkt.size_cnt[2]==8);
@@ -99,6 +93,7 @@ void TestStingyUpdateQuery() {
   VERIFY(bkt.size_cnt[5]==8); 
   VERIFY(bkt.size_cnt[6]==10); 
   VERIFY(bkt.size_cnt[7]==8);   
+  std::cout << "pass test_stingy_update_query" << std::endl;
 }
 
 

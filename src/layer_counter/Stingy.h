@@ -131,6 +131,7 @@ private:
     while (true){
       try_num++;
       index = (index+pseed)%cNum;
+      //std::cout << index << std::endl;
       if(cnt_array[0][index]!=KICK_TAG){
         return index;
       }
@@ -159,6 +160,9 @@ private:
   void updateOne(int32_t lr, size_t index);
 
   std::pair<T, size_t> query_with_size(size_t ori_index);
+
+  void do_clear_cnt(size_t index);
+
 
 public:
   /**
@@ -202,7 +206,10 @@ public:
    * @brief Clear counter
    * 
    */
-  void clear_cnt(size_t index) override;
+  void clear_cnt(size_t index) override{
+    original_cnt[index] = 0;
+    do_clear_cnt(index);
+  }
   /**
    * @brief Query a counter online
    * 
@@ -301,7 +308,7 @@ void Stingy<no_layer, T>::initCounter(size_t counter_num){
         std::to_string(no_layer) + ".");
   }
   // initialize kickout seeds
-  cNum = counter_num;
+  cNum = 1 << Util::Next2Pow(counter_num);
   int32_t candidate = 31;
   int32_t cNum32 = static_cast<int32_t>(cNum);
   while(true){
@@ -330,6 +337,7 @@ void Stingy<no_layer, T>::initCounter(size_t counter_num){
 
 template <int32_t no_layer, typename T>
 bool Stingy<no_layer, T>::set_counter(size_t index, T val){
+  do_clear_cnt(index);
   // special handle the first layer
   if(cnt_array[0][index]==NULL_VAL){
     if (!check_parent_empty(0, index)){
@@ -350,8 +358,9 @@ bool Stingy<no_layer, T>::set_counter(size_t index, T val){
       if (!check_parent_empty(lr, index) && lr!=no_layer-1){
         return false;
       }
-      if (!check_sibling_empty(lr-1, last_index)){
+      if (cnt_array[lr-1][get_sibling(last_index)]!=NULL_VAL && cnt_array[lr-1][get_sibling(last_index)]!=KICK_TAG){
         // kick out the other carry chain, won't disrupt the intended value of the current chain
+        //std::cout << "kick out3 lr = " << lr-1 << " index = " << get_sibling(last_index) << std::endl;
         kick_out(lr-1, get_sibling(last_index)); 
       }
     }
@@ -368,7 +377,7 @@ template <int32_t no_layer, typename T>
 size_t Stingy<no_layer, T>::kick_out(size_t index){
   T val = query(index);
   // Reset original counter
-  clear_cnt(index);
+  do_clear_cnt(index);
   cnt_array[0][index] = KICK_TAG;
   // Find and set the next place
   size_t nxt_idx = index;
@@ -377,7 +386,7 @@ size_t Stingy<no_layer, T>::kick_out(size_t index){
     val += query(nxt_idx);
     bool suc = set_counter(nxt_idx, val);
     if(!suc){
-      clear_cnt(nxt_idx);
+      do_clear_cnt(nxt_idx);
       cnt_array[0][nxt_idx] = KICK_TAG;
     } else {
       break;
@@ -388,40 +397,49 @@ size_t Stingy<no_layer, T>::kick_out(size_t index){
 
 template <int32_t no_layer, typename T>
 size_t Stingy<no_layer, T>::kick_out(int32_t lr, size_t index){
-  for(int32_t i = lr;i>0;--i){
+  for(int32_t i = lr;i>1;--i){
     index = get_nonempty_child(i, index);
   }
   // special handle for the first layer
-  if(cnt_array[0][index*2]!=NULL_VAL && cnt_array[0][index*2]!=KICK_TAG){
-    index = index*2;
-  } else if(cnt_array[0][index*2+1]!=NULL_VAL && cnt_array[0][index*2+1]!=KICK_TAG){
-    index = index*2+1;
-  } else {
-    std::cerr << "broken carry chain" << std::endl;
-    exit(0);
+  if(lr > 0){
+    if(cnt_array[0][index*2]!=NULL_VAL && cnt_array[0][index*2]!=KICK_TAG){
+      index = index*2;
+    } else if(cnt_array[0][index*2+1]!=NULL_VAL && cnt_array[0][index*2+1]!=KICK_TAG){
+      index = index*2+1;
+    } else {
+      //std::cout << "index " << index*2 << " val " << int(cnt_array[0][index*2]) << std::endl;
+      //std::cout << "index " << index*2+1 << " val " << int(cnt_array[0][index*2+1]) << std::endl;
+      std::cerr << "broken carry chain2" << std::endl;
+      exit(0);
+    }
   }
   return kick_out(index);
 }
 
 template <int32_t no_layer, typename T>
 void Stingy<no_layer, T>::updateOne(int32_t lr, size_t index){
+  //std::cout << "lr " << lr << " index" << index << " val " << int(cnt_array[lr][index]) << std::endl;
   assert(lr<no_layer && cnt_array[lr][index]!=KICK_TAG);
   // first use
   if(cnt_array[lr][index]==NULL_VAL){
     if (!check_parent_empty(lr, index) && lr!=no_layer-1){
+      //std::cout << "kick out lr = " << lr << " index = " << index << std::endl;
       size_t nxt_index = kick_out(lr, index); // cnt_arry[lr, index] is NULL, but we can still locate the carry chain anyway
       nxt_index = nxt_index >> lr; // find the grandfather in lr-th layer
       updateOne(lr, nxt_index); // After kicking out, the original value may change, but only larger so the length of chain is at least `lr`.
       return;
     }
-    size_t child = get_nonempty_child(lr, index);
-    if (!check_sibling_empty(lr-1, child)){
-      kick_out(lr-1, get_sibling(child));
+    if(lr>0){
+      size_t child = get_nonempty_child(lr, index);
+      if (cnt_array[lr-1][get_sibling(child)]!=NULL_VAL && cnt_array[lr-1][get_sibling(child)]!=KICK_TAG){
+        //std::cout << "kick out2 lr = " << lr << " index = " << index << std::endl;
+        kick_out(lr-1, get_sibling(child));
+      }
     }
     cnt_array[lr][index] = 1;
   }
   cnt_array[lr][index] += 1;
-  uint8_t obj_val = (lr==0) ? 62:3;
+  uint8_t obj_val = (lr==0) ? 63:4;
   if(cnt_array[lr][index]==obj_val){
     cnt_array[lr][index] = 1;
     updateOne(lr+1, index/2);
@@ -433,18 +451,18 @@ template <int32_t no_layer, typename T>
 void Stingy<no_layer, T>::update(size_t ori_index, T val){
   assert(val>=0);
   original_cnt[ori_index]+=val;
+  //std::cout << "index " << ori_index << " val " << original_cnt[ori_index] << std::endl;
   size_t index = ori_index;
-  while (cnt_array[0][index] == KICK_TAG) {
-    index = (index + pseed)%cNum;
-  }
   for(T i = 0; i<val; ++i){
+    if(cnt_array[0][index] == KICK_TAG){
+      index = find_next_pos(index);
+    }
     updateOne(0, index);
   }
 }
 
 template <int32_t no_layer, typename T>
-void Stingy<no_layer, T>::clear_cnt(size_t index){
-  original_cnt[index] = 0;
+void Stingy<no_layer, T>::do_clear_cnt(size_t index){
   for (int32_t lr = 0; lr < no_layer; lr++){
     if (cnt_array[lr][index]==NULL_VAL){
       break;
