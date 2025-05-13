@@ -95,8 +95,6 @@ private:
     } else if(cnt_array[lr-1][index*2+1]!=NULL_VAL){
       return index*2+1;
     } else {
-      std::cout << lr-1 << " " << 2*index << " val: " << int(cnt_array[lr-1][index*2]) << std::endl;
-      std::cout << lr-1 << " " << 2*index+1 << " val: " << int(cnt_array[lr-1][index*2+1]) << std::endl;
       std::cerr << "broken carry chain" << std::endl;
       exit(0);
     }
@@ -381,13 +379,11 @@ template <int32_t no_layer, typename T>
 size_t Stingy<no_layer, T>::kick_out_mid(int32_t lr, size_t index, bool update_one){
   T add_val = update_one? 1:0;
   for(int32_t i = lr;i>1;--i){
-    //std::cout << int(cnt_array[i][index]) << " ";
     add_val *= 3;
     index = get_nonempty_child(i, index);
   }
   // special handle for the first layer
   if(lr > 0){
-    //std::cout << int(cnt_array[1][index]) << " ";
     add_val *= 62;
     if(cnt_array[0][index*2]!=NULL_VAL && cnt_array[0][index*2]!=KICK_TAG){
       index = index*2;
@@ -429,7 +425,6 @@ void Stingy<no_layer, T>::updateOne(int32_t lr, size_t index){
   // first use
   if(cnt_array[lr][index]==NULL_VAL){
     if (check_parent_non_empty(lr, index)){
-      //std::cout << "kick out " << lr << " " << index << std::endl;
       size_t nxt_index = kick_out_mid(lr, index, true); // cnt_arry[lr, index] is NULL, but we can still locate the carry chain anyway
       return;
     }
