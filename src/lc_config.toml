@@ -56,6 +56,19 @@
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [4, 4, 8, 8, 8]
 
+  [Lc.diamond]
+    sketch = ["CM"]
+    data = "../data/data-100K-1.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [4, 4, 4, 4, 4]
+    no_cnt_ratio = [0.2, 0.2, 0.1, 0.1]
+    cnt_del_ratio = 0.8
+    cnt_carry_ratio = 1.2
+    no_hash_inc = 3
+    no_hash_del = 3
+    no_hash_carry = 3
+
   [Lc.bs]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM","FR","ES"]

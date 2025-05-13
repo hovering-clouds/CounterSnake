@@ -394,7 +394,7 @@ size_t Pyramid<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
   size_t result = num*rsz/cNum;
   for(auto ori_index:idxs){
     size_t index = (ori_index*pseed)%cNum;
-    result += size_cnt[ori_index];
+    result += size_cnt[index];
   }
   return result;
 }
