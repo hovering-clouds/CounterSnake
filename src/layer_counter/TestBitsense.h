@@ -23,7 +23,7 @@
 
 #define KEYLEN 13 // 不同的key_type可以共享在一起，但是受限于实现方法暂时控制住
 #define COUNTER_TYPR int32_t // 不同的counter_type不应共享在一起
-#define LAYERNUM 3 // 层数需要与config文件中一致
+#define LAYERNUM 4 // 层数需要与config文件中一致
 
 namespace OmniSketch::Test {
 
@@ -161,6 +161,8 @@ void TestBitsense::runTest() {
   for(auto&& ptr: testPtr){
     ptr->runTest();
   }
+  std::ofstream outf("csize-bs.txt", std::ios::out);
+  counter.dumpCntSize(outf);
   counter.validate();
   for(int32_t lr = 0;lr<LAYERNUM-1;++lr){
     std::cout << "lr" << lr << " overflow: " << counter.getOfNum(lr) << '/' << no_cnt[lr+1] << std::endl;

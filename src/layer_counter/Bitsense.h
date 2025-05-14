@@ -66,6 +66,11 @@ private:
    */
   std::vector<size_t> width_cnt;
   /**
+   * @brief Bits of each counter
+   * 
+   */
+  std::vector<double> size_cnt;
+  /**
    * @brief Number of hash function used on each layer, from low to
    * high (except for the last layer)
    *
@@ -306,6 +311,7 @@ public:
   size_t csize(const std::vector<size_t>& idxs) const override;
 
   size_t getCMbits() const{
+    if(!use_cm_sketch){return 0;}
     int32_t length = 0;
     for (int i = 1; i < no_layer; i++) {
       length += width_cnt[i];
@@ -323,6 +329,12 @@ public:
    */
   void clear();
   void decode();
+  double avg_size_above(int32_t lr, size_t idx);
+  /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
   /**
    * @brief Check the consistency between counters and ori_counters
    * 
@@ -728,6 +740,8 @@ void BitSense<no_layer, T, hash_t>::initBs(const std::vector<size_t> &no_cnt_,
   for (int i = 0; i < no_cnt[0]; i++) {
     original_cnt[i] = 0;
   }
+  size_cnt.resize(no_cnt[0]);
+  std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   // decoded counters, value initialized
   decoded_cnt.resize(no_cnt[0]);
   // set counters to make them record negtive values
@@ -819,15 +833,31 @@ T BitSense<no_layer, T, hash_t>::getCntVal(size_t index) const {
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
+double BitSense<no_layer, T, hash_t>::avg_size_above(int32_t lr, size_t idx){
+  if(lr==no_layer-1 || !status_bits[lr][idx]){
+    return 0;
+  }
+  double bits = 0;
+  for(size_t i = 0;i<no_hash[lr];++i){
+    size_t nxt_idx = hash_fns[lr][i](idx) % no_cnt[lr + 1];
+    bits += 1 + width_cnt[lr+1] + avg_size_above(lr+1, nxt_idx);
+  }
+  return bits/no_hash[lr];
+}
+
+template <int32_t no_layer, typename T, typename hash_t>
 void BitSense<no_layer, T, hash_t>::decode(){
   // counters + status bits
   if(use_cm_sketch){
     std::cout << "CM bytes " << (getCMbits()/8) << std::endl;
   }
-  rsz = 0;
-  for (int32_t i = 1; i < no_layer; ++i) {
-    rsz += no_cnt[i] * width_cnt[i];
-    rsz += no_cnt[i];
+  rsz = getCMbits();
+  //for (int32_t i = 1; i < no_layer; ++i) {
+  //  rsz += no_cnt[i] * width_cnt[i];
+  //  rsz += no_cnt[i];
+  //}
+  for (size_t i = 0;i<no_cnt[0];++i){
+    size_cnt[i] = 1 + width_cnt[0] + avg_size_above(0, i);
   }
   ofNum = getOfNum(0);
   printf("\nDECODER CALLED!\n");
@@ -925,16 +955,14 @@ size_t BitSense<no_layer, T, hash_t>::tagsize() const {
 
 template <int32_t no_layer, typename T, typename hash_t>
 size_t BitSense<no_layer, T, hash_t>::csize(const std::vector<size_t>& idxs) const{
-  size_t result = idxs.size()*width_cnt[0]; // layer 0
+  double result = 0; // layer 0
   if (use_cm_sketch) {
-    result+=idxs.size()*getCMbits()/cNum;
+    result+=idxs.size()*rsz/cNum;
   }
-  size_t num = 0;
   for(auto ori_index:idxs){
     size_t index = (ori_index*pseed)%cNum;
-    num += status_bits[0][index];
+    result += size_cnt[index];
   }
-  result += num*rsz/ofNum;
   return result;
 }
 
@@ -943,6 +971,21 @@ size_t BitSense<no_layer, T, hash_t>::getOfNum(int32_t lr) const{
   return status_bits[lr].count();
 }
 
+template <int32_t no_layer, typename T, typename hash_t>
+void BitSense<no_layer, T, hash_t>::dumpCntSize(std::ostream& os) const{
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    double cz = size_cnt[i] + double(rsz)/cNum;
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cz << " " << ideal << std::endl;
+  }
+}
 
 template <int32_t no_layer, typename T, typename hash_t>
 size_t BitSense<no_layer, T, hash_t>::originalSize() const {
@@ -963,6 +1006,8 @@ void BitSense<no_layer, T, hash_t>::clear() {
   original_cnt = std::vector<T>(no_cnt[0]);
   rsz = 0;
   ofNum = 0;
+  std::fill_n(size_cnt.begin(), no_cnt[0], 0);
+
   // // reset decoded counters
   // decoded_cnt = std::vector<double>(no_cnt[0]);
   // reset lazy_update
