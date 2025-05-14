@@ -37,7 +37,7 @@ void TestDiamondNormal() {
   bkt.decode();
   VERIFY(bkt.getCnt(0)==0); 
   VERIFY(bkt.size_cnt[0]==4);
-  VERIFY(bkt.rsz==44);
+  VERIFY(bkt.rsz==40);
   std::cout << "pass test_diamond_normal" << std::endl;
 }
 

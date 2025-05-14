@@ -117,6 +117,7 @@ private:
   Diamond(Diamond &&) = delete;
 
   void update_add(size_t index, T val);
+  void update_add_overflow(size_t index, T of_val);
   void update_sub(size_t index, T val);
 
   int32_t query_carry_part(size_t index);
@@ -338,9 +339,20 @@ void Diamond<no_layer, T, hash_t>::initDiamond(const std::vector<size_t> &_no_cn
 
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update_add(size_t index, T val){
+  T new_val = inc_part[0][index] + val;
+  T of_val = new_val >> width_cnt[0];
+  new_val = new_val & ((1 << width_cnt[0])-1);
+  inc_part[0][index] = new_val;
+  if(of_val!=0){
+    update_add_overflow(index, of_val);
+  }
+}
+
+template <int32_t no_layer, typename T, typename hash_t>
+void Diamond<no_layer, T, hash_t>::update_add_overflow(size_t index, T val){
   int32_t lr;
   std::vector<size_t> idxs(no_hash_inc);
-  for(lr = 0;lr<no_layer;++lr){
+  for(lr = 1;lr<no_layer;++lr){
     uint8_t min_val = 255;
     for(size_t i = 0;i<no_hash_inc;++i){
       size_t inc_idx = hash_fns_inc[lr][i](index) % no_cnt[lr];
@@ -419,9 +431,9 @@ T Diamond<no_layer, T, hash_t>::query(size_t index){
   // query carry part
   int32_t depth = query_carry_part(index);
   // increment part
-  T result = 0;
-  size_t cur_bits = 0;
-  for(int32_t lr = 0;lr<=depth;++lr){
+  T result = inc_part[0][index];
+  size_t cur_bits = width_cnt[0];
+  for(int32_t lr = 1;lr<=depth;++lr){
     uint8_t val = query_inc_part(lr, index);
     result += T(val) << cur_bits;
     cur_bits += width_cnt[lr];
