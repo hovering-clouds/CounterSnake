@@ -120,19 +120,6 @@ private:
    * 
    */
   size_t ofNum;
-  /**
-   * @brief Seed used for random permutation. The formula is: true_idx = (original_idx*pseed)%cNum.
-   * Therefore, for inversibility, `pseed` needs to be coprime with `cNum`. Also, we need to spread
-   * the counters of each sketch evenly in the buckets, so `pseed` should be much greater than the number
-   * of sketch instances.
-   * 
-   */
-  size_t pseed;
-  /**
-   * @brief The inverse of `pseed` modula `cNum`
-   * 
-   */
-  size_t iseed;
 
 #ifndef RECORD_ACCESS_TIME
   /**
@@ -263,8 +250,7 @@ public:
    * - An out-of-range exception would be thrown if `index` is out of range.
    */
   void updateCnt(size_t index, T val);
-  void update(size_t ori_index, T val) override{
-    size_t index = (ori_index*pseed)%cNum;
+  void update(size_t index, T val) override{
     updateCnt(index, val);
   }
   /**
@@ -278,8 +264,7 @@ public:
    * index serialized in advance.
    */
   T getCntVal(size_t index) const;
-  T getCnt(size_t ori_index) const override {
-    size_t index = (ori_index*pseed)%cNum;
+  T getCnt(size_t index) const override {
     return getCntVal(index);
   }
   /**
@@ -291,8 +276,7 @@ public:
    * the index serialized in advance.
    */
   T getOriginalCnt(size_t index) const;
-  T getOriCnt(size_t ori_index) const{
-    size_t index = (ori_index*pseed)%cNum;
+  T getOriCnt(size_t index) const{
     return getOriginalCnt(index);
   }
   /**
@@ -376,13 +360,11 @@ public:
                  int32_t layer = 0);
   T get_current_cnt(size_t idx);
   T getEstCnt(int32_t idx, int32_t layer = 0);
-  T query(size_t ori_index) override{
-    size_t index = (ori_index*pseed)%cNum;
+  T query(size_t index) override{
     return getEstCnt(index, 0);
   }
   void resetCnt(size_t index, T val);
-  void clear_cnt(size_t ori_index) override{
-    size_t index = (ori_index*pseed)%cNum;
+  void clear_cnt(size_t index) override{
     resetCnt(index, 0);
   }
   T getTotalCnt(int32_t idx, int32_t layer = 0);
@@ -772,15 +754,6 @@ void BitSense<no_layer, T, hash_t>::initBs(const std::vector<size_t> &no_cnt_,
   }
   rsz = 0;
   cNum = no_cnt[0];
-  int32_t candidate = 31;
-  int32_t cNum32 = static_cast<int32_t>(no_cnt[0]);
-  while(true){
-    if(Util::IsCoprime(candidate, cNum32)){
-      pseed = static_cast<size_t>(candidate);
-      iseed = static_cast<size_t>(Util::MulInverse(candidate, cNum32));
-      break;
-    }else{candidate++;}
-  }
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
@@ -959,8 +932,7 @@ size_t BitSense<no_layer, T, hash_t>::csize(const std::vector<size_t>& idxs) con
   if (use_cm_sketch) {
     result+=idxs.size()*rsz/cNum;
   }
-  for(auto ori_index:idxs){
-    size_t index = (ori_index*pseed)%cNum;
+  for(auto index:idxs){
     result += size_cnt[index];
   }
   return result;

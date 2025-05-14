@@ -11,6 +11,7 @@
 
 #include <common/layer.h>
 #include <common/utils.h>
+#include <iomanip>
 #include <iostream>
 #include <chrono>
 
@@ -230,6 +231,11 @@ public:
    * 
    */
   void dumpOri(std::ostream& os) const;
+  /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
 
 };
 
@@ -436,6 +442,24 @@ void Pyramid<no_layer, T>::dumpOri(std::ostream& os) const{
     os << i << ' ';
   }
   os << std::endl;
+}
+
+template <int32_t no_layer, typename T>
+void Pyramid<no_layer, T>::dumpCntSize(std::ostream& os) const{
+  std::cout << "average rsize: " << double(rsz)/cNum << std::endl;
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    size_t idx = (i*pseed)%cNum;
+    double cz = size_cnt[idx] + double(rsz)/cNum;
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cz << " " << ideal << std::endl;
+  }
 }
 
 }
