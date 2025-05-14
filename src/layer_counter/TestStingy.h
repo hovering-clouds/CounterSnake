@@ -135,10 +135,13 @@ void TestStingy::runTest() {
   for(auto&& ptr: testPtr){
     ptr->runTest();
   }
+  std::cout << "Mem used: " << counter.bsize()/1024 << " KB" << std::endl;
   counter.validate();
   std::cout << "layer1 unused: " << counter.getEmptyNum(0) << '/' << counter.getcNum() << std::endl;
   //std::cout << counter.bsize() << std::endl;
-  //std::ofstream outf("tmpCnt.txt", std::ios::out);
+  std::ofstream outf("csize-stingy.txt", std::ios::out);
+  counter.dumpCntSize(outf);
+  counter.dumpEmptyNum(std::cout);
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
   //counter.dumpCnt(outf);
   //counter.dumpOri(outf2);

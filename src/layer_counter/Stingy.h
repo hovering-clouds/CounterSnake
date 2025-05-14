@@ -15,6 +15,7 @@
 #include <common/layer.h>
 #include <common/utils.h>
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 
 namespace OmniSketch::Counter{
@@ -249,6 +250,14 @@ public:
     return rsz;
   }
 
+  size_t bsize() const{
+    size_t bits = 6*no_cnt[0];
+    for(int32_t i = 1;i<no_layer;++i){
+      bits+=2*no_cnt[i];
+    }
+    return bits/8;
+  }
+
   size_t csize(const std::vector<size_t>& idxs) const override;
 
   /**
@@ -299,7 +308,16 @@ public:
    * 
    */
   void dumpOri(std::ostream& os) const;
-
+  /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
+  void dumpEmptyNum(std::ostream& os) const{
+    for (int32_t i = 0;i<no_layer;++i){
+      os << "unused or kicked counters in Layer#" << i << ": " << getEmptyNum(i) << " / " << no_cnt[i] << std::endl;
+    }
+  }
 };
 
 template <int32_t no_layer, typename T>
@@ -560,6 +578,23 @@ void Stingy<no_layer, T>::dumpOri(std::ostream& os) const{
     os << i << ' ';
   }
   os << std::endl;
+}
+
+template <int32_t no_layer, typename T>
+void Stingy<no_layer, T>::dumpCntSize(std::ostream& os) const{
+  std::cout << "average rsize: " << double(rsz)/cNum << std::endl;
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    double cz = size_cnt[i] + double(rsz)/cNum;
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cz << " " << ideal << std::endl;
+  }
 }
 
 }
