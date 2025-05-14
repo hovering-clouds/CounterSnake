@@ -144,8 +144,9 @@ void TestBitMatcher::runTest() {
   counter.validate();
   //std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   //std::cout << counter.bsize() << std::endl;
-  //std::ofstream outf("tmpCnt.txt", std::ios::out);
+  std::ofstream outf("csize-bm.txt", std::ios::out);
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
+  counter.dumpCntSize(outf);
   //counter.dumpCnt(outf);
   //counter.dumpOri(outf2);
   return;

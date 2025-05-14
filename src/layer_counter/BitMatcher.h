@@ -225,6 +225,8 @@ public:
    */
   size_t rsize() const;
 
+  size_t empty_num() const;
+
   void dump(std::ostream& os) const {
     int32_t cnt_num = getCntNum();
     os << "exist: ";
@@ -516,6 +518,11 @@ public:
     }
   }
   /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
+  /**
    * @brief Check the consistency between counters and ori_counters
    * 
    */
@@ -693,6 +700,18 @@ size_t Bucket<T>::rsize() const{
     }
   }
   return rsz;
+}
+
+template <typename T>
+size_t Bucket<T>::empty_num() const{
+  size_t num = 0; // flag & empty
+  int cnt_num = counter_num[flag];
+  for(int i = 0;i<cnt_num;++i){
+    if(!is_exist(i)){
+      num++;
+    }
+  }
+  return num;
 }
 
 template <typename T>
@@ -885,13 +904,22 @@ void BitMatcher<T>::decode(){
   auto MY_TOCK = std::chrono::steady_clock::now();
 #endif
   rsz = 0;
+  int num = 0;
   for (size_t i = 0; i < cNum; i++){
     decoded_cnt[i] = queryWithSize(i, size_cnt[i]);
-    size_cnt[i]+=8;
+    if(size_cnt[i]==0){
+      num++;
+    } else {
+      size_cnt[i]+=8;
+    }
   }
+  std::cout << "un-inserted counters: " << num << " ";
+  num = 0;
   for (size_t i = 0; i < bNum; i++){
     rsz+=buckets[i].rsize();
+    num+=buckets[i].empty_num();
   }
+  std::cout << "empty slots: " << num << std::endl;
 #ifdef TEST_DECODE_TIME
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
@@ -922,6 +950,23 @@ size_t BitMatcher<T>::csize(const std::vector<size_t>& idxs) const{
     result += bkt2.csize(fp);
   }
   return result;
+}
+
+template <typename T>
+void BitMatcher<T>::dumpCntSize(std::ostream& os) const{
+  std::cout << double(rsz)/cNum << std::endl;
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    double cz = size_cnt[i] + double(rsz)/cNum;
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cz << " " << ideal << std::endl;
+  }
 }
 
 

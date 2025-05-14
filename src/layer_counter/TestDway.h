@@ -152,7 +152,7 @@ void TestDway::runTest() {
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
   std::ofstream outf3("tmpFree.txt", std::ios::out);
   std::ofstream outf4("tmpOfIdx.txt", std::ios::out);
-  std::ofstream outf5("dway-csize.txt", std::ios::out);
+  std::ofstream outf5("csize-dway.txt", std::ios::out);
   //counter.dumpCnt(outf);
   //counter.dumpOri(outf2);
   counter.dumpFreeCnt(outf3);
