@@ -312,6 +312,11 @@ public:
     }
   }
   /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
+  /**
    * @brief Check the consistency between counters and ori_counters
    * 
    */
@@ -479,6 +484,20 @@ void Sac<T>::decode(){
 #endif
 }
 
+template <typename T>
+void Sac<T>::dumpCntSize(std::ostream& os) const{
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cnt_len+1 << " " << ideal << std::endl;
+  }
+}
 
 }// end of namespace Counter
 
