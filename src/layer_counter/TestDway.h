@@ -23,7 +23,7 @@
 
 #define KEYLEN 13 // 不同的key_type可以共享在一起，但是受限于实现方法暂时控制住
 #define COUNTER_TYPR int32_t // 不同的counter_type不应共享在一起
-#define LAYERNUM 3 // 层数需要与config文件中一致
+#define LAYERNUM 4 // 层数需要与config文件中一致
 
 namespace OmniSketch::Test {
 
@@ -152,10 +152,12 @@ void TestDway::runTest() {
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
   std::ofstream outf3("tmpFree.txt", std::ios::out);
   std::ofstream outf4("tmpOfIdx.txt", std::ios::out);
+  std::ofstream outf5("dway-csize.txt", std::ios::out);
   //counter.dumpCnt(outf);
   //counter.dumpOri(outf2);
   counter.dumpFreeCnt(outf3);
   counter.dumpOfIdx(outf4);
+  counter.dumpCntSize(outf5);
   counter.validate();
   std::cout << "mem consumption of counters: "<< counter.bsize()/1024 << " KB." << std::endl;
   std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;

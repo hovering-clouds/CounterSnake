@@ -16,6 +16,7 @@
 #include <vector>
 #include <set>
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #define DTAG_INVALID 0
 typedef unsigned short dtag_t;
@@ -423,6 +424,11 @@ public:
    */
   void dumpFreeCnt(std::ostream& os) const;
   /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
+  /**
    * @brief Check the consistency between counters and ori_counters
    * 
    */
@@ -804,6 +810,22 @@ void Dway<no_layer, T>::dumpFreeCnt(std::ostream& os) const{
     os << "Unused segments in layer " << lr << ": ";
     os << cnt_ptr->getUnusedNum(lr) << '/' << cnt_ptr->getCntNo(lr);
     os << std::endl;
+  }
+}
+
+template <int32_t no_layer, typename T>
+void Dway<no_layer, T>::dumpCntSize(std::ostream& os) const{
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    double cz = cnt_size[i] + double(rsz)/cNum;
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cz << " " << ideal << std::endl;
   }
 }
 
