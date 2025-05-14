@@ -253,6 +253,11 @@ public:
    * 
    */
   void dumpOri(std::ostream& os) const;
+  /**
+   * @brief Dump the actual counter size and its ideal size
+   * 
+   */
+  void dumpCntSize(std::ostream& os) const;
 
 };
 
@@ -477,7 +482,7 @@ void Diamond<no_layer, T, hash_t>::decode(){
   //  std::cout << lr << ' ' << getEmptyNum(lr) << std::endl;
   //  rsz+=width_cnt[lr]*getEmptyNum(lr);
   //}
-  rsz=no_cnt_carry*3+no_cnt_del*8;
+  rsz=no_cnt_carry*2+no_cnt_del*8;
 #ifdef TEST_DECODE_TIME
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
@@ -539,6 +544,23 @@ void Diamond<no_layer, T, hash_t>::dumpOri(std::ostream& os) const{
     os << i << ' ';
   }
   os << std::endl;
+}
+
+template <int32_t no_layer, typename T, typename hash_t>
+void Diamond<no_layer, T, hash_t>::dumpCntSize(std::ostream& os) const{
+  std::cout << "average rsize: " << double(rsz)/cNum << std::endl;
+  os << std::setprecision(3);
+  for(size_t i = 0;i<cNum;++i){
+    double cz = size_cnt[i] + double(rsz)/cNum;
+    T cnt_val = getOriCnt(i);
+    size_t ideal;
+    if(cnt_val==0){
+      ideal = 1;
+    } else {
+      ideal = floor(log2(cnt_val))+1;
+    }
+    os << cz << " " << ideal << std::endl;
+  }
 }
 
 }
