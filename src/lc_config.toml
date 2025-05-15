@@ -2,13 +2,13 @@
   
   [Lc.dway]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
-    sketch = ["CM","FR","ES"]
+    sketch = ["CM"]
     data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     group_num = 256
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    width_cnt = [8, 8, 16]
-    dway = [0, 16, 1]
+    width_cnt = [4, 4, 6, 6]
+    dway = [0, 24, 4, 4]
 
   [Lc.dwayneg]
     sketch = ["CS"]
@@ -21,7 +21,7 @@
 
   [Lc.brick]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
-    sketch = ["CM","FR","ES"]
+    sketch = ["CM"]
     data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
@@ -29,11 +29,11 @@
     no_cnt = [64, 4, 1]
   
   [Lc.bitmatcher]
-    sketch = ["CM", "FR"]
+    sketch = ["CM"]
     data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    bkt_rate = 3.0
+    bkt_rate = 8.0
 
   [Lc.sac]
     sketch = ["CM"]
@@ -50,11 +50,11 @@
 
   [Lc.pyramid]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
-    sketch = ["CM","FR","ES"]
+    sketch = ["CM"]
     data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    width_cnt = [4, 4, 8, 8, 8]
+    width_cnt = [4, 4, 4, 4, 4]
 
   [Lc.diamond]
     sketch = ["CM"]
@@ -63,7 +63,7 @@
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     width_cnt = [4, 4, 4, 4, 4]
     no_cnt_ratio = [0.2, 0.2, 0.1, 0.1]
-    cnt_del_ratio = 0.8
+    cnt_del_ratio = 0.2
     cnt_carry_ratio = 1.2
     no_hash_inc = 3
     no_hash_del = 3
@@ -71,13 +71,13 @@
 
   [Lc.bs]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
-    sketch = ["CM","FR","ES"]
+    sketch = ["CM"]
     data = "../data/data-100K-1.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    no_cnt_ratio = 0.09
-    width_cnt = [8, 8, 16]
-    no_hash = [3, 3]
+    no_cnt_ratio = 0.2
+    width_cnt = [4, 4, 8, 8]
+    no_hash = [3, 3, 3]
     aux_width_ratio = 0.15
     aux_depth = 3
 
