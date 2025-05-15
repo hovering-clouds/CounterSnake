@@ -46,9 +46,9 @@ target_link_libraries(OmniTools fmt)
 add_subdirectory(test)
 
 # ---- Pcap Library ----
-
+set(PCPP_ROOT /home/liu_xunpeng/software/pcap++/PcapPlusPlus-24.09) # add this because my pcap++ is not at normal place
 function(check_library)
-  find_library(${ARGV0} ${ARGV1})
+  find_library(${ARGV0} ${ARGV1} ${PCPP_ROOT}/lib)
   if(NOT ${ARGV0})
     message(FATAL_ERROR "lib ${ARGV1} not found")
   else()
@@ -65,16 +65,16 @@ endif()
 
 # ---- Pcap Parser ----
 
-if(NOT PCPP_INCLUDE_PATH)
-  set(PCPP_INCLUDE_PATH /usr/local/include/pcapplusplus)
-  message(STATUS "pcapplusplus is included at ${PCPP_INCLUDE_PATH} by default")
+if(NOT PCPP_INCLUDE_DIR)
+  set(PCPP_INCLUDE_DIR ${PCPP_ROOT}/include/pcapplusplus)
+  message(STATUS "pcapplusplus is included at ${PCPP_INCLUDE_DIR} by default")
 else()
-  message(STATUS "pcapplusplus is included at ${PCPP_INCLUDE_PATH}")
+  message(STATUS "pcapplusplus is included at ${PCPP_INCLUDE_DIR}")
 endif()
 
 if(BUILD_PCAP_PARSER)
   add_executable(parser ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_parser/parser.cpp)
-  target_include_directories(parser PRIVATE ${PCPP_INCLUDE_PATH})
+  target_include_directories(parser PRIVATE ${PCPP_INCLUDE_DIR})
   target_link_libraries(parser ${PCPP} ${PACPP} ${COMPP} ${PCAP} fmt OmniTools)
 endif()
 
