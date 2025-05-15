@@ -29,10 +29,10 @@ add_subdirectory(third_party/fmt)
 add_subdirectory(third_party/toml)
 # Configuring toml & eigen needs a bit more work
 include_directories(third_party/toml/include)
+include_directories(third_party/eigen)
 
 # ---- Boost libraries ----
 
-set(BOOST_ROOT /home/hc/software/boost_1_82_0/) # add this because my boost is not at normal place
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 

@@ -10,9 +10,9 @@
 
 #include <common/hash.h>
 #include <common/sketch.h>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/IterativeLinearSolvers>
-#include <eigen3/Eigen/SparseCore>
+#include <Eigen/Dense>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseCore>
 #include <boost/dynamic_bitset.hpp>
 #include <map>
 #include <random>
