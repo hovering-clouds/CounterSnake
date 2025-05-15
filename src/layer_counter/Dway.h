@@ -445,6 +445,11 @@ public:
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+    size_t unused_bits = 0;
+    for(int32_t lr=1;lr<no_layer;++lr){
+      unused_bits += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr));
+    }
+    std::cout << "Tag size: " << tagsize() << " ,"  << "empty counter size: " << unused_bits/8 << std::endl;
   }
   /**
    * @brief Clear the counters

@@ -225,6 +225,8 @@ public:
    */
   size_t rsize() const;
 
+  size_t empty_cnt_bits() const;
+
   size_t empty_num() const;
 
   void dump(std::ostream& os) const {
@@ -550,6 +552,12 @@ public:
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter AAE: " << (double)err/cNum << std::endl;
+    size_t fp_num = 0, empty_size = 0;
+    for(size_t i = 0;i<bNum;++i){
+      fp_num+=buckets[i].getCntNum();
+      empty_size += buckets[i].empty_cnt_bits();
+    }
+    std::cout << "Tag size: " << (bNum*4/8)+fp_num*8/8 << " ,"  << "empty counter size: " << empty_size/8 << std::endl;
   }
   /**
    * @brief Clear the counters
@@ -697,6 +705,20 @@ size_t Bucket<T>::rsize() const{
       int start = layout[flag][i];
       int end = layout[flag][i+1];
       rsz += end-start; 
+    }
+  }
+  return rsz;
+}
+
+template <typename T>
+size_t Bucket<T>::empty_cnt_bits() const{
+  size_t rsz = 0; // flag & empty
+  int cnt_num = counter_num[flag];
+  for(int i = 0;i<cnt_num;++i){
+    if(!is_exist(i)){
+      int start = layout[flag][i];
+      int end = layout[flag][i+1];
+      rsz += end-start-8; 
     }
   }
   return rsz;

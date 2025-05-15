@@ -333,6 +333,7 @@ public:
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter AAE: " << (double)err/cNum << std::endl;
+    std::cout << "Tag size: " << cNum/8 << " ,"  << "empty counter size: " << 0 << std::endl;
   }
   /**
    * @brief Clear the counters

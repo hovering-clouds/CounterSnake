@@ -242,6 +242,7 @@ public:
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+    std::cout << "Tag size: " << tagsize() << " ,"  << "empty counter size: " << 0 << std::endl;
   }
 
   /**
@@ -526,7 +527,7 @@ size_t Diamond<no_layer, T, hash_t>::csize(const std::vector<size_t>& idxs) cons
 
 template <int32_t no_layer, typename T, typename hash_t>
 size_t Diamond<no_layer, T, hash_t>::tagsize() const{
-  return no_cnt_carry*3/8;
+  return no_cnt_carry*2/8+no_cnt_del*8/8;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>

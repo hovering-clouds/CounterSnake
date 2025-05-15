@@ -296,6 +296,11 @@ public:
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+    size_t empty_size = 6*getEmptyNum(0);
+    for (int32_t i = 1;i<no_layer;++i){
+      empty_size += 2*getEmptyNum(i);
+    }
+    std::cout << "Tag size: " << 0 << " ,"  << "empty counter size: " << empty_size/8 << std::endl;
   }
 
   /**

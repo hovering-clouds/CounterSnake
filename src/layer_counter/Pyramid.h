@@ -219,6 +219,7 @@ public:
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
     std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+    std::cout << "Tag size: " << tagsize() << " ,"  << "empty counter size: " << rsz/8 << std::endl;
   }
 
   /**
@@ -397,7 +398,7 @@ size_t Pyramid<no_layer, T>::getOfNum(int32_t lr) const{
 template <int32_t no_layer, typename T>
 size_t Pyramid<no_layer, T>::csize(const std::vector<size_t>& idxs) const{
   size_t num = idxs.size();
-  size_t result = num*rsz/cNum;
+  size_t result = num*(rsz+tagsize())/cNum;
   for(auto ori_index:idxs){
     size_t index = (ori_index*pseed)%cNum;
     result += size_cnt[index];
