@@ -246,6 +246,7 @@ private:
    * 
    */
   std::vector<size_t> cnt_size;
+  std::vector<size_t> cnt_size_pure;
   
   /**
    * @brief Reported overflow, in the form (layer, index)
@@ -605,6 +606,8 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
   cnt_size.resize(no_cnt[0]);
   std::fill_n(cnt_size.begin(), no_cnt[0], 0);
+  cnt_size_pure.resize(no_cnt[0]);
+  std::fill_n(cnt_size_pure.begin(), no_cnt[0], 0);
   of_num.resize(no_layer);
   std::fill_n(of_num.begin(), no_layer, 0);
 }
@@ -758,12 +761,13 @@ void Dway<no_layer, T>::decode(){
   for(int32_t lr=1;lr<no_layer;++lr){
     accum_bits[lr] = accum_bits[lr-1]+cnt_ptr->getWidth(lr);
   }
-  size_t tag_len = ceil(log2(gNum))+1;
+  size_t tag_len = ceil(log2(gNum));
   // decoded values
   for(size_t i = 0;i<cNum;++i){
     std::pair<T, size_t> pr = query_with_layer(i);
     decoded_cnt[i] = pr.first;
     cnt_size[i] = accum_bits[pr.second-1]+(pr.second-1)*tag_len;
+    cnt_size_pure[i] = accum_bits[pr.second-1];
   }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
@@ -779,13 +783,13 @@ void Dway<no_layer, T>::decode(){
 
 template <int32_t no_layer, typename T>
 size_t Dway<no_layer, T>::bsize() const{
-  size_t tag_len = ceil(log2(gNum))+1;
+  size_t tag_len = ceil(log2(gNum));
   return cnt_ptr->bits_num(tag_len)/8;
 }
 
 template <int32_t no_layer, typename T>
 size_t Dway<no_layer, T>::tagsize() const{
-  size_t tag_len = ceil(log2(gNum))+1;
+  size_t tag_len = ceil(log2(gNum));
   return cnt_ptr->tag_bits(tag_len)/8;
 }
 
@@ -820,9 +824,14 @@ void Dway<no_layer, T>::dumpFreeCnt(std::ostream& os) const{
 
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::dumpCntSize(std::ostream& os) const{
+  size_t unused_bits = 0;
+  for(int32_t lr=1;lr<no_layer;++lr){
+    unused_bits += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr));
+  }
+  unused_bits += 8*tagsize();
   os << std::setprecision(3);
   for(size_t i = 0;i<cNum;++i){
-    double cz = cnt_size[i] + double(rsz)/cNum;
+    double cz = cnt_size_pure[i] + double(unused_bits)/cNum;
     T cnt_val = getOriCnt(i);
     size_t ideal;
     if(cnt_val==0){

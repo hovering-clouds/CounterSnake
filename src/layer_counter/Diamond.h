@@ -241,7 +241,7 @@ public:
     }
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;
     std::cout << "Inconsistency ratio: " << (double)num/cNum << std::endl;
-    std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
+    std::cout << "Counter AAE: " << (double)err/cNum << std::endl;
     std::cout << "Tag size: " << tagsize() << " ,"  << "empty counter size: " << 0 << std::endl;
   }
 
@@ -313,8 +313,8 @@ void Diamond<no_layer, T, hash_t>::initDiamond(const std::vector<size_t> &_no_cn
   }
   
   // initialize hash funcs
-  hash_fns_inc = new std::vector<hash_t>[no_layer - 1];
-  for (int32_t i = 0; i < no_layer - 1; ++i) {
+  hash_fns_inc = new std::vector<hash_t>[no_layer];
+  for (int32_t i = 0; i < no_layer; ++i) {
     hash_fns_inc[i] = std::vector<hash_t>(no_hash_inc);
   }
   hash_fns_del = std::vector<hash_t>(no_hash_del);

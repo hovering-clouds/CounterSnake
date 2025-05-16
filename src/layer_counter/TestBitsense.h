@@ -167,7 +167,13 @@ void TestBitsense::runTest() {
   for(int32_t lr = 0;lr<LAYERNUM-1;++lr){
     std::cout << "lr" << lr << " overflow: " << counter.getOfNum(lr) << '/' << no_cnt[lr+1] << std::endl;
   }
+  size_t counter_size = 0;
+  for(int i = 0;i<LAYERNUM;++i){
+    counter_size += no_cnt[i]*width_cnt[i];
+  }
   std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
+  std::cout << "mem consumption of counters: "<< counter_size/8/1024 << " KB." << std::endl;
+  std::cout << "mem consumption of CM: "<< counter.getCMbits()/8/1024 << " KB." << std::endl;
   return;
 }
 

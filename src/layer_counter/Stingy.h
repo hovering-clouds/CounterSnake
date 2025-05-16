@@ -444,6 +444,7 @@ size_t Stingy<no_layer, T>::kick_out_with_value(size_t index, T add_val){
 
 template <int32_t no_layer, typename T>
 void Stingy<no_layer, T>::updateOne(int32_t lr, size_t index){
+  if(lr>=no_layer){std::cout << lr << std::endl;}
   assert(lr<no_layer && cnt_array[lr][index]!=KICK_TAG);
   // first use
   if(cnt_array[lr][index]==NULL_VAL){

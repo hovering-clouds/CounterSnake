@@ -496,7 +496,7 @@ void Sac<T>::dumpCntSize(std::ostream& os) const{
     } else {
       ideal = floor(log2(cnt_val))+1;
     }
-    os << cnt_len+1 << " " << ideal << std::endl;
+    os << cnt_len << " " << ideal << std::endl;
   }
 }
 

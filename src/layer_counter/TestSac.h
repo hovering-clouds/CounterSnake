@@ -65,21 +65,21 @@ void TestSac::initPtr(toml::array& sketch_list,
   for(auto& node: sketch_list){
     std::string str = node.as_string()->value_or<std::string>("");
     if(str.compare("CM")==0){ // CM sketch
-      testPtr.push_back(std::make_unique<LcCMTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM CMSketch", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcCMTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC CMSketch", config_file, data, cnt_method));
     } else if(str.compare("FR")==0){ // FlowRadar
-      testPtr.push_back(std::make_unique<LcFlowRadarTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM FlowRadar", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcFlowRadarTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC FlowRadar", config_file, data, cnt_method));
     } else if(str.compare("HP")==0){ //HashPipe
-      testPtr.push_back(std::make_unique<LcHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM HashPipe", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcHashPipeTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC HashPipe", config_file, data, cnt_method));
     } else if(str.compare("DT")==0){ //Deltoid
-      testPtr.push_back(std::make_unique<LcDeltoidTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM Deltoid", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcDeltoidTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC Deltoid", config_file, data, cnt_method));
     } else if(str.compare("PR")==0){ //PR sketch
-      testPtr.push_back(std::make_unique<LcPRTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM PRSketch", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcPRTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC PRSketch", config_file, data, cnt_method));
     } else if(str.compare("ES")==0){ //Elastic sketch
-      testPtr.push_back(std::make_unique<LcESTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM ElasticSketch", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcESTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC ElasticSketch", config_file, data, cnt_method));
     } else if(str.compare("MV")==0){ //MV sketch
-      testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM MVSketch", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC MVSketch", config_file, data, cnt_method));
     } else if(str.compare("SL")==0){ //SketchLearn
-      testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM SketchLearn", config_file, data, cnt_method));
+      testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("SAC SketchLearn", config_file, data, cnt_method));
     }
   }
 }
