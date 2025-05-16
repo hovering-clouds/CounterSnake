@@ -3,12 +3,12 @@
   [Lc.dway]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
-    group_num = 256
+    group_num = 64
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    width_cnt = [4, 4, 6, 6]
-    dway = [0, 24, 4, 4]
+    width_cnt = [6, 6, 4, 4]
+    dway = [0, 10, 4, 2]
 
   [Lc.dwayneg]
     sketch = ["CS"]
@@ -30,39 +30,39 @@
   
   [Lc.bitmatcher]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    bkt_rate = 8.0
+    bkt_rate = 5.0
 
   [Lc.sac]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
     cnt_len = 8
 
   [Lc.stingy]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
 
   [Lc.pyramid]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    width_cnt = [4, 4, 4, 4, 4]
+    width_cnt = [6, 6, 4, 4]
 
   [Lc.diamond]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    width_cnt = [4, 4, 4, 4, 4]
-    no_cnt_ratio = [0.2, 0.2, 0.1, 0.1]
+    width_cnt = [6, 6, 4, 4]
+    no_cnt_ratio = [0.15, 0.15, 0.15]
     cnt_del_ratio = 0.2
     cnt_carry_ratio = 1.2
     no_hash_inc = 3
@@ -72,11 +72,11 @@
   [Lc.bs]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM"]
-    data = "../data/data-100K-1.bin"
+    data = "../data/data-1000K.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
-    no_cnt_ratio = 0.2
-    width_cnt = [4, 4, 8, 8]
+    no_cnt_ratio = 0.15
+    width_cnt = [6, 6, 4, 6]
     no_hash = [3, 3, 3]
     aux_width_ratio = 0.15
     aux_depth = 3
@@ -86,7 +86,7 @@
 
   [CM.para]
     depth = 4
-    width = 115001
+    width = 250001
 
   [CM.test]
     update = ["RATE"]
