@@ -105,6 +105,7 @@ private:
   }
 
 public:
+  size_t update_num;
   /**
    * @brief Construct Pyramid and initialize inner counters.
    * 
@@ -300,10 +301,13 @@ void Pyramid<no_layer, T>::initPyramid(size_t counter_num, const std::vector<siz
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
   size_cnt.resize(no_cnt[0]);
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
+  rsz = 0;
+  update_num = 0;
 }
 
 template <int32_t no_layer, typename T>
 void Pyramid<no_layer, T>::update(size_t ori_index, T val){
+  update_num += 1;
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
@@ -364,6 +368,13 @@ void Pyramid<no_layer, T>::decode(){
   for(size_t i = 0;i<cNum;++i){
     decoded_cnt[i] = query(i);
   }
+#ifdef TEST_DECODE_TIME
+  MY_TOCK = std::chrono::steady_clock::now();
+  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
+                                                                   MY_TICK);
+  printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
+#endif
   std::vector<size_t> tmp_cnt(cNum, 0);
   std::fill_n(size_cnt.begin(), no_cnt[no_layer-1], width_cnt[no_layer-1]);
   for(int32_t lr = no_layer-1; lr > 0; --lr){
@@ -382,12 +393,6 @@ void Pyramid<no_layer, T>::decode(){
     }
     tmp_cnt.swap(size_cnt);
   }
-#ifdef TEST_DECODE_TIME
-  MY_TOCK = std::chrono::steady_clock::now();
-  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
-                                                                   MY_TICK);
-  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
-#endif
 }
 
 template <int32_t no_layer, typename T>
@@ -427,6 +432,7 @@ void Pyramid<no_layer, T>::clear(){
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
+  update_num = 0;
 }
 
 template <int32_t no_layer, typename T>

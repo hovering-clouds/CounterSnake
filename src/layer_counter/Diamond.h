@@ -125,6 +125,7 @@ private:
   uint8_t query_inc_part(int32_t lr, size_t index);
 
 public:
+  size_t update_num;
   /**
    * @brief Construct Diamond and initialize inner counters.
    * 
@@ -336,6 +337,7 @@ void Diamond<no_layer, T, hash_t>::initDiamond(const std::vector<size_t> &_no_cn
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
   cNum = no_cnt[0];
+  update_num = 0;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
@@ -408,6 +410,7 @@ void Diamond<no_layer, T, hash_t>::update_sub(size_t index, T val){
 
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update(size_t index, T val){
+  update_num += 1;
   original_cnt[index]+=val;
   if(val>=0){
     update_add(index, val);
@@ -477,18 +480,12 @@ uint8_t Diamond<no_layer, T, hash_t>::query_inc_part(int32_t lr, size_t index){
 
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::decode(){
-#ifdef TEST_DECODE_TIME
-  auto MY_TIMER = std::chrono::microseconds::zero();
-  auto MY_TICK = std::chrono::steady_clock::now();
-  auto MY_TOCK = std::chrono::steady_clock::now();
-#endif
   std::vector<size_t> accumulate_bits(no_layer);
   accumulate_bits[0] = width_cnt[0];
   for(int32_t i = 1;i<no_layer;++i){
     accumulate_bits[i] = accumulate_bits[i-1]+width_cnt[i];
   }
   for(size_t i = 0;i<cNum;++i){
-    decoded_cnt[i] = query(i);
     size_cnt[i] = accumulate_bits[query_carry_part(i)];
   }
   //for(int32_t lr = 0;lr<no_layer;++lr){
@@ -497,10 +494,19 @@ void Diamond<no_layer, T, hash_t>::decode(){
   //}
   rsz=no_cnt_carry*2+no_cnt_del*8;
 #ifdef TEST_DECODE_TIME
+  auto MY_TIMER = std::chrono::microseconds::zero();
+  auto MY_TICK = std::chrono::steady_clock::now();
+  auto MY_TOCK = std::chrono::steady_clock::now();
+#endif
+  for(size_t i = 0;i<cNum;++i){
+    decoded_cnt[i] = query(i);
+  }
+#ifdef TEST_DECODE_TIME
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
                                                                    MY_TICK);
-  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
 }
 
@@ -541,6 +547,7 @@ void Diamond<no_layer, T, hash_t>::clear(){
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
+  update_num = 0;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>

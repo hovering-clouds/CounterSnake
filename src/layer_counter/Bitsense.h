@@ -285,6 +285,10 @@ public:
    */
   size_t size() const;
 
+  size_t get_update_num() const{
+    return total_update_time;
+  }
+
   size_t tagsize() const;
   /**
    * @brief Get the number of overflow counters in layer `lr`
@@ -863,7 +867,8 @@ void BitSense<no_layer, T, hash_t>::decode(){
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
                                                                    MY_TICK);
-  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
   printf("\nDECODER END!\n");
   have_decoded = true;

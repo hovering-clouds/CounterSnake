@@ -147,9 +147,13 @@ void TestDiamond::runTest() {
   }
   counter.initDiamond(no_cnt, width_cnt, counter_num*cnt_del_ratio, \
     counter_num*cnt_carry_ratio, no_hash_inc, no_hash_del, no_hash_carry);
+  auto MY_TICK = std::chrono::steady_clock::now();
   for(auto&& ptr: testPtr){
     ptr->doUpdate();
   }
+  auto MY_TOCK = std::chrono::steady_clock::now();
+  auto MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK - MY_TICK);
+  printf("\nUpdate thrpt %lfMops\n", double(counter.update_num)/MY_TIMER.count());
   counter.decode();
   /// Step iv. test sketch
   ///
@@ -165,7 +169,7 @@ void TestDiamond::runTest() {
   std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   //std::cout << counter.bsize() << std::endl;
   std::ofstream outf("csize-diamond.txt", std::ios::out);
-  counter.dumpCntSize(outf);
+  //counter.dumpCntSize(outf);
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
   //counter.dumpCnt(outf);
   //counter.dumpOri(outf2);

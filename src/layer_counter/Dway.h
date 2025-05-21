@@ -272,6 +272,7 @@ private:
    */
   std::pair<T, int32_t> query_with_layer(size_t ori_index);
 public:
+  size_t update_num;
   /**
    * @brief Construct dway sharing structure and initialize inner counters.
    * 
@@ -462,6 +463,7 @@ public:
     cnt_ptr->clearAll();
     std::fill_n(original_cnt.begin(), cNum, 0);
     rsz = 0;
+    update_num = 0;
   }
 };
 
@@ -569,6 +571,7 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
   cNum = counter_num;
   gNum = group_num;
   rsz = 0;
+  update_num = 0;
   di = dway;
   if (di.size() != no_layer) {
     throw std::invalid_argument(
@@ -615,6 +618,7 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
 
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::update(size_t ori_index, T val){
+  update_num+=1;
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
@@ -756,11 +760,6 @@ void Dway<no_layer, T>::clear_cnt(size_t ori_index){
 
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::decode(){
-#ifdef TEST_DECODE_TIME
-  auto MY_TIMER = std::chrono::microseconds::zero();
-  auto MY_TICK = std::chrono::steady_clock::now();
-  auto MY_TOCK = std::chrono::steady_clock::now();
-#endif
   std::vector<size_t> accum_bits(no_layer);
   accum_bits[0] = cnt_ptr->getWidth(0);
   for(int32_t lr=1;lr<no_layer;++lr){
@@ -768,22 +767,28 @@ void Dway<no_layer, T>::decode(){
   }
   size_t tag_len = ceil(log2(gNum));
   // decoded values
+#ifdef TEST_DECODE_TIME
+  auto MY_TIMER = std::chrono::microseconds::zero();
+  auto MY_TICK = std::chrono::steady_clock::now();
+  auto MY_TOCK = std::chrono::steady_clock::now();
+#endif
   for(size_t i = 0;i<cNum;++i){
     std::pair<T, size_t> pr = query_with_layer(i);
     decoded_cnt[i] = pr.first;
     cnt_size[i] = accum_bits[pr.second-1]+(pr.second-1)*tag_len;
     cnt_size_pure[i] = accum_bits[pr.second-1];
   }
-  // get rsz
-  for(int32_t lr=1;lr<no_layer;++lr){
-    rsz += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr)+tag_len);
-  }
 #ifdef TEST_DECODE_TIME
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
                                                                    MY_TICK);
-  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
+  // get rsz
+  for(int32_t lr=1;lr<no_layer;++lr){
+    rsz += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr)+tag_len);
+  }
 }
 
 template <int32_t no_layer, typename T>

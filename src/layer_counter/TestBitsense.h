@@ -148,9 +148,13 @@ void TestBitsense::runTest() {
   }
   aux_width = Util::NextPrime(std::ceil(no_cnt[1]*aux_width_ratio));
   counter.initBs(no_cnt, width_cnt, no_hash, false, true, aux_depth, aux_width);
+  auto MY_TICK = std::chrono::steady_clock::now();
   for(auto&& ptr: testPtr){
     ptr->doUpdate();
   }
+  auto MY_TOCK = std::chrono::steady_clock::now();
+  auto MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK - MY_TICK);
+  printf("\nUpdate thrpt %lfMops\n", double(counter.get_update_num())/MY_TIMER.count());
   counter.decode();
   /// Step iv. test sketch
   ///
@@ -162,7 +166,7 @@ void TestBitsense::runTest() {
     ptr->runTest();
   }
   std::ofstream outf("csize-bs.txt", std::ios::out);
-  counter.dumpCntSize(outf);
+  //counter.dumpCntSize(outf);
   counter.validate();
   for(int32_t lr = 0;lr<LAYERNUM-1;++lr){
     std::cout << "lr" << lr << " overflow: " << counter.getOfNum(lr) << '/' << no_cnt[lr+1] << std::endl;

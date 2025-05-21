@@ -337,6 +337,7 @@ class BitMatcher : public LayerCounter<0, T> {
   void kickout(size_t bktId, uint8_t fp);
   void update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_val);
 public:
+  size_t update_num;
   /**
    * @brief Construct BitMatcher and initialize inner Buckets.
    * 
@@ -568,6 +569,7 @@ public:
       buckets[i].clear();
     }
     rsz = 0;
+    update_num = 0;
     failure_num = 0;
     std::fill_n(original_cnt.begin(), cNum, 0);
     std::fill_n(decoded_cnt.begin(), cNum, 0);
@@ -808,6 +810,7 @@ void BitMatcher<T>::initBucket(size_t counter_num, size_t bucket_num){
   bPow = Util::Next2Pow(bucket_num);
   bNum = 1<<bPow;
   rsz = 0;
+  update_num = 0;
   failure_num = 0;
   hash_fn = Hash::AwareHash();
   int32_t candidate = 31;
@@ -897,6 +900,7 @@ void BitMatcher<T>::update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_va
 
 template <typename T>
 void BitMatcher<T>::update(size_t index, T val){
+  update_num+=1;
   original_cnt[index] += val;
   uint8_t fp = (index*pseed)%256;
   uint64_t hashval = hash_fn(index);
@@ -935,6 +939,13 @@ void BitMatcher<T>::decode(){
       size_cnt[i]+=8;
     }
   }
+#ifdef TEST_DECODE_TIME
+  MY_TOCK = std::chrono::steady_clock::now();
+  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
+                                                                   MY_TICK);
+  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
+#endif
   std::cout << "un-inserted counters: " << num << " ";
   num = 0;
   for (size_t i = 0; i < bNum; i++){
@@ -942,12 +953,6 @@ void BitMatcher<T>::decode(){
     num+=buckets[i].empty_num();
   }
   std::cout << "empty slots: " << num << std::endl;
-#ifdef TEST_DECODE_TIME
-  MY_TOCK = std::chrono::steady_clock::now();
-  MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
-                                                                   MY_TICK);
-  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
-#endif
 }
 
 template <typename T>

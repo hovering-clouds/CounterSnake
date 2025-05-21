@@ -133,9 +133,13 @@ void TestDway::runTest() {
     counter_num += ptr->getCntNum();
   }
   counter.initCounter(counter_num, group_num, dway, width_cnt);
+  auto MY_TICK = std::chrono::steady_clock::now();
   for(auto&& ptr: testPtr){
     ptr->doUpdate();
   }
+  auto MY_TOCK = std::chrono::steady_clock::now();
+  auto MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK - MY_TICK);
+  printf("\nUpdate thrpt %lfMops\n", double(counter.update_num)/MY_TIMER.count());
   counter.decode();
   /// Step iv. test sketch
   ///
@@ -157,7 +161,7 @@ void TestDway::runTest() {
   //counter.dumpOri(outf2);
   counter.dumpFreeCnt(outf3);
   counter.dumpOfIdx(outf4);
-  counter.dumpCntSize(outf5);
+  //counter.dumpCntSize(outf5);
   counter.validate();
   std::cout << "mem consumption of counters: "<< counter.bsize()/1024 << " KB." << std::endl;
   std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;

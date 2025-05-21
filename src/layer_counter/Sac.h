@@ -171,6 +171,7 @@ class Sac : public LayerCounter<0, T> {
   Sac(Sac &&) = delete;
 
 public:
+  size_t update_num;
   /**
    * @brief Construct Sac and initialize inner Buckets.
    * 
@@ -210,6 +211,7 @@ public:
    * @param val Value to be added
    */
   void update(size_t index, T val) override{
+    update_num += 1;
     original_cnt[index] += val;
     counters[index].update(val);
   }
@@ -341,6 +343,7 @@ public:
    */
   void clear(){
     ofNum = 0;
+    update_num = 0;
     for (size_t i = 0; i < cNum; i++){
       counters.clear();
     }
@@ -457,6 +460,7 @@ template <typename T>
 void Sac<T>::initBucket(size_t counter_num, int32_t counter_len){
   cNum = counter_num;
   cnt_len = counter_len;
+  update_num = 0;
   SaCounter<T>::set_len(counter_len);
   counters.resize(cNum);
   std::fill_n(counters.begin(), cNum, SaCounter<T>());
@@ -481,7 +485,8 @@ void Sac<T>::decode(){
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK -
                                                                    MY_TICK);
-  printf("\nDECODE COST %jdms\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
+  printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
 }
 
