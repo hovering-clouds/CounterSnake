@@ -15,6 +15,7 @@
 #include <numeric>
 #include <vector>
 #include <set>
+#include <unordered_map>
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -252,7 +253,7 @@ private:
    * @brief Reported overflow, in the form (layer, index)
    * 
    */
-  std::map<int32_t, T> backup_tbl;
+  std::unordered_map<int32_t, T> backup_tbl;
 
   Dway(const Dway &) = delete;
   Dway(Dway &&) = delete;
@@ -616,11 +617,6 @@ template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::update(size_t ori_index, T val){
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
-  auto it = backup_tbl.find(index);
-  if(it!=backup_tbl.end()){
-    it->second += val;
-    return;
-  }
   for(int32_t lr = 0;lr<no_layer;++lr){
     T of_val = cnt_ptr->updateSegment(lr, index, val);
     //std::cout << lr << ' ' << index << ' ' <<of_val << std::endl;
@@ -629,6 +625,13 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
         throw std::overflow_error(
             "Counter overflow at the last layer in dway counter, overflow by " +
             std::to_string(of_val) + ".");
+      }
+      if(lr==0){
+        auto it = backup_tbl.find(index);
+        if(it!=backup_tbl.end()){
+          it->second += of_val;
+          return;
+        }
       }
       val = of_val;
       size_t gid = index/gNum;
@@ -678,21 +681,23 @@ inline void Dway<no_layer, T>::insert_backup(int32_t layer, size_t index, T of_v
     cnt_ptr->resetSegment(i, index);
     index = gid*gNum+(tag-gNum);
   }
-  val <<= cnt_ptr->getWidth(0);
-  val += cnt_ptr->getSegment(0, index);
-  cnt_ptr->resetSegment(0, index);
+  //val <<= cnt_ptr->getWidth(0);
+  //val += cnt_ptr->getSegment(0, index);
+  //cnt_ptr->resetSegment(0, index);
   backup_tbl.insert(std::make_pair((int32_t)index, val));
 }
 
 template <int32_t no_layer, typename T>
 std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
-  auto it = backup_tbl.find(index);
-  if(it!=backup_tbl.end()){
-    return std::make_pair(it->second, no_layer);
-  }
   size_t cur_bits = cnt_ptr->getWidth(0);
   T result = cnt_ptr->getSegment(0, index);
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    T val = it->second << cur_bits;
+    val += result;
+    return std::make_pair(val, no_layer);
+  }
   int32_t lr;
   for(lr = 1;lr<no_layer;++lr){
     size_t gid = index/gNum;
