@@ -221,7 +221,27 @@ private:
    * @brief the pointer to counter layers
    * 
    */
-  std::unique_ptr<DwayCntLayer<no_layer, T>> cnt_ptr;
+  // std::unique_ptr<DwayCntLayer<no_layer, T>> cnt_ptr;
+  /**
+   * @brief Number of counters on each layer, from low to high.
+   *
+   */
+  std::vector<size_t> no_cnt;
+  /**
+   * @brief Width of counters on each layer, from low to high.
+   *
+   */
+  std::vector<size_t> width_cnt;
+  /**
+   * @brief Counters in each layer
+   *
+   */
+  std::vector<Util::DynamicIntX<T>> cnt_array[no_layer];
+  /**
+   * @brief Each tag in this array corresponds to a segment
+   *
+   */
+  std::vector<dtag_t> tag_array[no_layer];
   /**
    * @brief The number of shared segments in each layer
    *
@@ -392,6 +412,7 @@ public:
   size_t getcNum() const{
     return cNum;
   }
+  size_t getUnusedNum(int32_t layer) const;
   /**
    * @brief Dump decoded counters to ostream
    * 
@@ -450,7 +471,7 @@ public:
     std::cout << "Counter ARE: " << (double)err/cNum << std::endl;
     size_t unused_bits = 0;
     for(int32_t lr=1;lr<no_layer;++lr){
-      unused_bits += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr));
+      unused_bits += getUnusedNum(lr)*(width_cnt[lr]);
     }
     std::cout << "Tag size: " << tagsize() << " ,"  << "empty counter size: " << unused_bits/8 << std::endl;
   }
@@ -460,7 +481,14 @@ public:
    */
   void clear(){
     backup_tbl.clear();
-    cnt_ptr->clearAll();
+    for (int32_t lr = 0;lr<no_layer;++lr){
+      for (auto& seg:cnt_array[lr]){
+        seg.reset();
+      }
+    }
+    for (int32_t lr = 1;lr<no_layer;++lr){
+      std::fill_n(tag_array[lr].begin(), no_cnt[lr], DTAG_INVALID);
+    }
     std::fill_n(original_cnt.begin(), cNum, 0);
     rsz = 0;
     update_num = 0;
@@ -534,6 +562,16 @@ size_t DwayCntLayer<no_layer, T>::getUnusedNum(int32_t layer) const{
 }
 
 template <int32_t no_layer, typename T>
+size_t Dway<no_layer, T>::getUnusedNum(int32_t layer) const{
+  if(layer==0){return 0;}
+  size_t result = 0;
+  for(auto idx:tag_array[layer]){
+    if(idx==DTAG_INVALID){result++;}
+  }
+  return result;
+}
+
+template <int32_t no_layer, typename T>
 void DwayCntLayer<no_layer, T>::clearAll(){
   for (int32_t lr = 0;lr<no_layer;++lr){
     for (auto& seg:cnt_array[lr]){
@@ -567,12 +605,13 @@ size_t DwayCntLayer<no_layer, T>::tag_bits(size_t tag_len) const{
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::initCounter( size_t counter_num,
     size_t group_num, const std::vector<size_t> &dway,
-    const std::vector<size_t> &width_cnt){
+    const std::vector<size_t> &_width_cnt){
   cNum = counter_num;
   gNum = group_num;
   rsz = 0;
   update_num = 0;
   di = dway;
+  width_cnt = _width_cnt;
   if (di.size() != no_layer) {
     throw std::invalid_argument(
         "Invalid Argument: `dway` should be of size " +
@@ -585,6 +624,21 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
           "Invalid Argument: There is a zero in `dway`.");
     }
   }
+  for (auto i : width_cnt) {
+    if (i == 0) {
+      throw std::invalid_argument(
+          "Invalid Argument: There is a zero in `width_cnt`.");
+    }
+  }
+  size_t length = 0;
+  for (auto i : width_cnt) {
+    size_t tmp = length + i;
+    if (tmp < length || tmp > sizeof(T) * 8) {
+      throw std::invalid_argument(
+          "Invalid Argument: Aggregate length of `width_cnt` is too large.");
+    }
+    length = tmp;
+  }
   // initialize permutation seeds
   int32_t candidate = gNum;
   int32_t cNum32 = static_cast<int32_t>(cNum);
@@ -596,13 +650,21 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
     }else{candidate++;}
   }
   // initialize cnt_ptr
-  std::vector<size_t> no_cnt(no_layer);
+  no_cnt = std::vector<size_t>(no_layer);
   no_cnt[0] = cNum;
   for(int32_t lr = 1;lr<no_layer;++lr){
     size_t no_grp = (no_cnt[lr-1]+gNum-1)/gNum;
     no_cnt[lr] = no_grp*di[lr];
   }
-  cnt_ptr = std::make_unique<DwayCntLayer<no_layer, T>>(no_cnt, width_cnt);
+
+  for (int32_t i = 0; i < no_layer; ++i) {
+    cnt_array[i] = std::vector<Util::DynamicIntX<T>>(no_cnt[i], {width_cnt[i]});
+  }
+  for (int32_t i = 1; i < no_layer; ++i) {
+    // initialize status_array of layer i with number of counters in layer i-1
+    tag_array[i] = std::vector<dtag_t>(no_cnt[i], DTAG_INVALID);
+  }
+  // cnt_ptr = std::make_unique<DwayCntLayer<no_layer, T>>(no_cnt, width_cnt);
   // original counters, value initialized
   original_cnt.resize(no_cnt[0]);
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
@@ -622,7 +684,7 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
-    T of_val = cnt_ptr->updateSegment(lr, index, val);
+    T of_val = cnt_array[lr][index] + val;
     //std::cout << lr << ' ' << index << ' ' <<of_val << std::endl;
     if(of_val!=0){
       if(lr==no_layer-1){ // last layer should not overflow
@@ -643,7 +705,7 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
       bool matched = false;
       // Case 1: a matched segment
       for(size_t nextId = gid*di[lr+1]; nextId<(gid+1)*di[lr+1];++nextId){
-        if(cnt_ptr->getTag(lr+1, nextId)==tag){
+        if(tag_array[lr+1][nextId]==tag){
           index = nextId;
           matched = true;
           break;
@@ -652,8 +714,8 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
       if(matched){continue;}
       // Case 2: no match, allocate a new one
       for(size_t nextId = gid*di[lr+1]; nextId<(gid+1)*di[lr+1];++nextId){
-        if(cnt_ptr->getTag(lr+1, nextId)==DTAG_INVALID){
-          cnt_ptr->setTag(lr+1, nextId, tag);
+        if(tag_array[lr+1][nextId]==DTAG_INVALID){
+          tag_array[lr+1][nextId] = tag;
           index = nextId;
           matched = true;
           break;
@@ -677,25 +739,22 @@ inline void Dway<no_layer, T>::insert_backup(int32_t layer, size_t index, T of_v
 {
   T val = of_val;
   for(int32_t i = layer; i>0; --i){
-    val <<= cnt_ptr->getWidth(i);
-    val += cnt_ptr->getSegment(i, index);
+    val <<= width_cnt[i];
+    val += cnt_array[i][index].getVal();
     size_t gid = index/di[i];
-    dtag_t tag = cnt_ptr->getTag(i, index);
-    cnt_ptr->setTag(i, index, DTAG_INVALID);
-    cnt_ptr->resetSegment(i, index);
+    dtag_t tag = tag_array[i][index];
+    tag_array[i][index] = DTAG_INVALID;
+    cnt_array[i][index].reset();
     index = gid*gNum+(tag-gNum);
   }
-  //val <<= cnt_ptr->getWidth(0);
-  //val += cnt_ptr->getSegment(0, index);
-  //cnt_ptr->resetSegment(0, index);
   backup_tbl.insert(std::make_pair((int32_t)index, val));
 }
 
 template <int32_t no_layer, typename T>
 std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
-  size_t cur_bits = cnt_ptr->getWidth(0);
-  T result = cnt_ptr->getSegment(0, index);
+  size_t cur_bits = width_cnt[0];
+  T result = cnt_array[0][index].getVal();
   auto it = backup_tbl.find(index);
   if(it!=backup_tbl.end()){
     T val = it->second << cur_bits;
@@ -708,10 +767,10 @@ std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
     dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
     bool matched = false;
     for(size_t nextId = gid*di[lr]; nextId<(gid+1)*di[lr];++nextId){
-      if(cnt_ptr->getTag(lr, nextId)==tag){
+      if(tag_array[lr][nextId]==tag){
         index = nextId;
-        result+=cnt_ptr->getSegment(lr, index)<<cur_bits;
-        cur_bits+= cnt_ptr->getWidth(lr);
+        result+=cnt_array[lr][index].getVal()<<cur_bits;
+        cur_bits+= width_cnt[lr];
         matched = true;
         break;
       }
@@ -737,16 +796,16 @@ void Dway<no_layer, T>::clear_cnt(size_t ori_index){
     backup_tbl.erase(it);
     return;
   }
-  cnt_ptr->resetSegment(0, index);
+  cnt_array[0][index].reset();
   for(int32_t lr = 1;lr<no_layer;++lr){
     size_t gid = index/gNum;
     dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
     bool matched = false;
     for(size_t nextId = gid*di[lr]; nextId<(gid+1)*di[lr];++nextId){
-      if(cnt_ptr->getTag(lr, nextId)==tag){
+      if(tag_array[lr][nextId]==tag){
         index = nextId;
-        cnt_ptr->resetSegment(lr, index);
-        cnt_ptr->setTag(lr, index, DTAG_INVALID);
+        cnt_array[lr][index].reset();
+        tag_array[lr][index] = DTAG_INVALID;
         matched = true;
         break;
       }
@@ -761,9 +820,9 @@ void Dway<no_layer, T>::clear_cnt(size_t ori_index){
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::decode(){
   std::vector<size_t> accum_bits(no_layer);
-  accum_bits[0] = cnt_ptr->getWidth(0);
+  accum_bits[0] = width_cnt[0];
   for(int32_t lr=1;lr<no_layer;++lr){
-    accum_bits[lr] = accum_bits[lr-1]+cnt_ptr->getWidth(lr);
+    accum_bits[lr] = accum_bits[lr-1]+width_cnt[lr];
   }
   size_t tag_len = ceil(log2(gNum));
   // decoded values
@@ -787,20 +846,28 @@ void Dway<no_layer, T>::decode(){
 #endif
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
-    rsz += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr)+tag_len);
+    rsz += getUnusedNum(lr)*(no_cnt[lr]+tag_len);
   }
 }
 
 template <int32_t no_layer, typename T>
 size_t Dway<no_layer, T>::bsize() const{
   size_t tag_len = ceil(log2(gNum));
-  return cnt_ptr->bits_num(tag_len)/8;
+  size_t bits = no_cnt[0]*width_cnt[0];
+  for(int32_t lr = 1; lr<no_layer; ++lr){
+    bits+=no_cnt[lr]*(width_cnt[lr]+tag_len);
+  }
+  return bits/8;
 }
 
 template <int32_t no_layer, typename T>
 size_t Dway<no_layer, T>::tagsize() const{
   size_t tag_len = ceil(log2(gNum));
-  return cnt_ptr->tag_bits(tag_len)/8;
+  size_t bits = 0;
+  for(int32_t lr = 1; lr<no_layer; ++lr){
+    bits+=no_cnt[lr]*tag_len;
+  }
+  return bits/8;
 }
 
 template <int32_t no_layer, typename T>
@@ -818,7 +885,7 @@ void Dway<no_layer, T>::dumpOfIdx(std::ostream& os) const{
   os << "table size: " << backup_tbl.size() << std::endl;
   for(int32_t lr = 0;lr<no_layer;++lr){
     os << "layer " << lr << " ratio: ";
-    os << of_num[lr] << '/' << cnt_ptr->getCntNo(lr);
+    os << of_num[lr] << '/' << no_cnt[lr];
     os << std::endl;
   }
 }
@@ -827,7 +894,7 @@ template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::dumpFreeCnt(std::ostream& os) const{
   for(int32_t lr = 0;lr<no_layer;++lr){
     os << "Unused segments in layer " << lr << ": ";
-    os << cnt_ptr->getUnusedNum(lr) << '/' << cnt_ptr->getCntNo(lr);
+    os << getUnusedNum(lr) << '/' << no_cnt[lr];
     os << std::endl;
   }
 }
@@ -836,7 +903,7 @@ template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::dumpCntSize(std::ostream& os) const{
   size_t unused_bits = 0;
   for(int32_t lr=1;lr<no_layer;++lr){
-    unused_bits += cnt_ptr->getUnusedNum(lr)*(cnt_ptr->getWidth(lr));
+    unused_bits += getUnusedNum(lr)*(width_cnt[lr]);
   }
   unused_bits += 8*tagsize();
   os << std::setprecision(3);
