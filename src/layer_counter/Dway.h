@@ -755,12 +755,12 @@ std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
   size_t cur_bits = width_cnt[0];
   T result = cnt_array[0][index].getVal();
-  auto it = backup_tbl.find(index);
-  if(it!=backup_tbl.end()){
-    T val = it->second << cur_bits;
-    val += result;
-    return std::make_pair(val, no_layer);
-  }
+  //auto it = backup_tbl.find(index);
+  //if(it!=backup_tbl.end()){
+  //  T val = it->second << cur_bits;
+  //  val += result;
+  //  return std::make_pair(val, no_layer);
+  //}
   int32_t lr;
   for(lr = 1;lr<no_layer;++lr){
     size_t gid = index/gNum;
@@ -844,6 +844,10 @@ void Dway<no_layer, T>::decode(){
   printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
   printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
+  for(auto pr: backup_tbl){
+    size_t ori_index = (pr.first*iseed)%cNum;
+    decoded_cnt[ori_index] += pr.second << width_cnt[0];
+  }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
     rsz += getUnusedNum(lr)*(no_cnt[lr]+tag_len);
