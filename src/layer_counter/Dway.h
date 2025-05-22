@@ -850,7 +850,7 @@ void Dway<no_layer, T>::decode(){
   }
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
-    rsz += getUnusedNum(lr)*(no_cnt[lr]+tag_len);
+    rsz += getUnusedNum(lr)*(width_cnt[lr]+tag_len);
   }
 }
 
