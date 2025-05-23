@@ -91,9 +91,9 @@ private:
 
   size_t get_nonempty_child(int32_t lr, size_t index){
     assert(lr>0);
-    if(cnt_array[lr-1][index*2]!=NULL_VAL){
+    if(cnt_array[lr-1][index*2]!=NULL_VAL && cnt_array[lr-1][index*2]!=KICK_TAG){
       return index*2;
-    } else if(cnt_array[lr-1][index*2+1]!=NULL_VAL){
+    } else if(cnt_array[lr-1][index*2+1]!=NULL_VAL && cnt_array[lr-1][index*2+1]!=KICK_TAG){
       return index*2+1;
     } else {
       std::cerr << "broken carry chain" << std::endl;
