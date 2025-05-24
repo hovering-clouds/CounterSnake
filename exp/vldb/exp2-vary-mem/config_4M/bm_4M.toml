@@ -1,0 +1,152 @@
+[Lc] # Layer Counter
+
+  [Lc.bitmatcher]
+    sketch = ["CM"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    bkt_rate = 5.0
+
+
+[CM]
+
+  [CM.para]
+    depth = 4
+    width = 500001
+
+  [CM.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  
+[CS]
+
+  [CS.para]
+    depth = 4
+    width = 115001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  
+
+[CMHEAP]
+
+  [CMHEAP.para]
+    depth = 2
+    width = 80001
+    pre_thre = 100
+
+  [CMHEAP.data]
+    hx_method = "Percentile"
+    threshold_heavy_hitter = 0.0009173226287898038
+    #threshold_heavy_hitter = 0.0005
+
+  [CMHEAP.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "RCD"]
+
+
+[FlowRadar]
+
+  [FlowRadar.para]
+    flow_filter_bit = 3080150
+    flow_filter_hash = 10
+    count_table_num = 140510
+    count_table_hash = 3
+
+  [FlowRadar.test]
+    update = ["RATE"]
+    decode = ["TIME", "ARE", "AAE", "RATIO", "ACC", "PODF"]
+    decode_podf = 0.01
+
+
+[HP]
+
+  [HP.para]
+    depth = 5
+    width = 6222
+
+  [HP.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 1000
+
+  [HP.test]
+    update = ["RATE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1", "RCD"]
+
+
+[DT]
+
+  [DT.para]
+    num_hash = 3
+    num_group = 5400
+
+  [DT.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 800
+
+  [DT.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
+
+
+[PR]
+  
+  [PR.para]
+    counter_length = 120000
+    counter_hash_num = 3
+    filter_length = 1848000
+    filter_hash_num = 6
+    phi = 10
+
+  [PR.test]
+    update = ["RATE"]
+    decode = ["TIME", "ARE", "AAE", "RATIO", "PODF"]
+    decode_podf = 0.01
+
+
+[ES]
+  
+  [ES.para]
+    num_buckets = 1000
+    num_per_bucket = 1
+    l_depth = 4
+    l_width = 120001
+
+  [ES.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+
+
+[MV]
+
+  [MV.para]
+    depth = 3
+    width = 3001
+
+  [MV.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 500
+
+  [MV.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL","F1", "RCD"]
+
+
+[SL]
+
+  [SL.para]
+    depth = 3
+    width = 3000
+
+  [SL.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 1000
+
+  [SL.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
