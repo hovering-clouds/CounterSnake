@@ -24,3 +24,12 @@ mode = "binary"
 #   If mode equals "binary" or "txt", this is a must.
 format = [["flowkey", "padding", "timestamp", "length", "padding"],
           [13,         3,         8,           2,        6        ]]
+
+
+[synthesizer]
+skew = 1.0
+maximum = 100
+flow_number = 1000
+output_file = "../data/test.bin"
+format = [["flowkey", "padding", "timestamp", "length", "padding"],
+          [13,         3,         8,           2,        6        ]]

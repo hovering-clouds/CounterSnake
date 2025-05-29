@@ -76,6 +76,11 @@ if(BUILD_PCAP_PARSER)
   add_executable(parser ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_parser/parser.cpp)
   target_include_directories(parser PRIVATE ${PCPP_INCLUDE_DIR})
   target_link_libraries(parser ${PCPP} ${PACPP} ${COMPP} ${PCAP} fmt OmniTools)
+  add_executable(parser_kosarak ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_parser/parser_kosarak.cpp)
+  target_include_directories(parser_kosarak PRIVATE ${PCPP_INCLUDE_DIR})
+  target_link_libraries(parser_kosarak ${PCPP} ${PACPP} ${COMPP} ${PCAP} fmt OmniTools)
+  add_executable(synthesizer ${CMAKE_CURRENT_SOURCE_DIR}/src/pcap_parser/synthesizer.cpp)
+  target_link_libraries(synthesizer fmt OmniTools)
 endif()
 
 # ---- User-defined sketches ---- #
