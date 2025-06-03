@@ -85,7 +85,7 @@ void TestBitMatcher::initPtr(toml::array& sketch_list,
 }
 
 void TestBitMatcher::runTest() {
-  srand(20250430);
+  srand(20250602);
   /// step i: parse ACS param
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;

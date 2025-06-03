@@ -324,10 +324,10 @@ void Diamond<no_layer, T, hash_t>::initDiamond(const std::vector<size_t> &_no_cn
   no_cnt = _no_cnt;
   width_cnt = _width_cnt;
   for (int32_t i = 0; i < no_layer; ++i) {
-    inc_part[i] = std::vector<uint8_t>(no_cnt[i]);
+    inc_part[i] = std::vector<uint8_t>(no_cnt[i], 0);
   }
-  carry_part = std::vector<uint8_t>(no_cnt_carry);
-  del_part = std::vector<uint16_t>(no_cnt_del);
+  carry_part = std::vector<uint8_t>(no_cnt_carry, 0);
+  del_part = std::vector<uint16_t>(no_cnt_del, 0);
   // original counters, value initialized
   original_cnt.resize(no_cnt[0]);
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);

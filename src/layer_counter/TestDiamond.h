@@ -85,7 +85,7 @@ void TestDiamond::initPtr(toml::array& sketch_list,
 }
 
 void TestDiamond::runTest() {
-  srand(20250513);
+  srand(20250530);
   /// step i: parse ACS param
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;
@@ -168,7 +168,7 @@ void TestDiamond::runTest() {
   //std::cout << "layer1 overflow: " << counter.getOfNum(0) << '/' << counter.getcNum() << std::endl;
   std::cout << "mem consumption of tags: "<< counter.tagsize()/1024 << " KB." << std::endl;
   //std::cout << counter.bsize() << std::endl;
-  std::ofstream outf("csize-diamond.txt", std::ios::out);
+  //std::ofstream outf("tmpCnt.txt", std::ios::out);
   //counter.dumpCntSize(outf);
   //std::ofstream outf2("tmpOri.txt", std::ios::out);
   //counter.dumpCnt(outf);

@@ -23,7 +23,7 @@
 
 #define KEYLEN 13 // 不同的key_type可以共享在一起，但是受限于实现方法暂时控制住
 #define COUNTER_TYPR uint32_t // 不同的counter_type不应共享在一起
-#define LAYERNUM 10 // 6+2+2+2+2+2+2+2=20
+#define LAYERNUM 11 // 6+2+2+2+2+2+2+2=20
 
 namespace OmniSketch::Test {
 
@@ -85,7 +85,7 @@ void TestStingy::initPtr(toml::array& sketch_list,
 }
 
 void TestStingy::runTest() {
-  srand(20250512);
+  srand(20250601);
   /// step i: parse ACS param
   std::string data_file, cmethod;
   toml::array sketch_list, fmt_list;
