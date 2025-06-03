@@ -131,7 +131,8 @@ void LcHashPipe<key_len, no_layer, T, hash_t>::update(
     c_key = slots[0][idx].flowkey;
     c_val = counter.query(0*width+idx+offset);
     slots[0][idx].flowkey = flowkey;
-    counter.update(0*width+idx+offset, val-c_val);
+    counter.clear_cnt(0*width+idx+offset);
+    counter.update(0*width+idx+offset, val);
   }
   // Later stages
   for (int i = 1; i < depth; ++i) {
@@ -150,7 +151,8 @@ void LcHashPipe<key_len, no_layer, T, hash_t>::update(
         auto tmpkey = c_key;
         c_key = slots[i][idx].flowkey;
         slots[i][idx].flowkey = tmpkey;
-        counter.update(i*width+idx+offset, c_val-new_c_val);
+        counter.clear_cnt(i*width+idx+offset);
+        counter.update(i*width+idx+offset, c_val);
         c_val = new_c_val;
       }
     }
@@ -198,7 +200,7 @@ size_t LcHashPipe<key_len, no_layer, T, hash_t>::size() const {
   }
   return sizeof(*this)                    // instance
          + sizeof(hash_t) * depth         // hashing class
-         + sizeof(Entry) * depth * width  // slots(flow_keys)
+         //+ sizeof(Entry) * depth * width  // slots(flow_keys)
          + counter.csize(idxs)/8;
 }
 
