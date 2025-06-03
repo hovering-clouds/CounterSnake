@@ -86,7 +86,7 @@ private:
    * @brief Counters of the delete part
    *
    */
-  std::vector<uint16_t> del_part;
+  std::vector<uint32_t> del_part;
   /**
    * @brief Original counters(ground truth)
    *
@@ -121,7 +121,7 @@ private:
   void update_sub(size_t index, T val);
 
   int32_t query_carry_part(size_t index);
-  uint16_t query_del_part(size_t index);
+  uint32_t query_del_part(size_t index);
   uint8_t query_inc_part(int32_t lr, size_t index);
 
 public:
@@ -327,7 +327,7 @@ void Diamond<no_layer, T, hash_t>::initDiamond(const std::vector<size_t> &_no_cn
     inc_part[i] = std::vector<uint8_t>(no_cnt[i], 0);
   }
   carry_part = std::vector<uint8_t>(no_cnt_carry, 0);
-  del_part = std::vector<uint16_t>(no_cnt_del, 0);
+  del_part = std::vector<uint32_t>(no_cnt_del, 0);
   // original counters, value initialized
   original_cnt.resize(no_cnt[0]);
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
@@ -394,13 +394,13 @@ void Diamond<no_layer, T, hash_t>::update_add_overflow(size_t index, T val){
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update_sub(size_t index, T val){
   std::vector<size_t> idxs(no_hash_del);
-  uint16_t min_val = std::numeric_limits<uint16_t>::max();
+  uint32_t min_val = std::numeric_limits<uint32_t>::max();
   for(size_t i = 0;i<no_hash_del;++i){
     size_t del_idx = hash_fns_del[i](index) % no_cnt_del;
     idxs[i] = del_idx;
     min_val = std::min(min_val, del_part[del_idx]);
   }
-  min_val+=uint16_t(-val);
+  min_val+=uint32_t(-val);
   for(size_t i = 0;i<no_hash_del;++i){
     size_t del_idx = idxs[i];
     del_part[del_idx] = std::max(min_val, del_part[del_idx]);
@@ -410,6 +410,9 @@ void Diamond<no_layer, T, hash_t>::update_sub(size_t index, T val){
 
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update(size_t index, T val){
+  if(index==1000){
+    std::cout << "update " << val << std::endl;
+  }
   update_num += 1;
   original_cnt[index]+=val;
   if(val>=0){
@@ -443,8 +446,11 @@ T Diamond<no_layer, T, hash_t>::query(size_t index){
     cur_bits += width_cnt[lr];
   }
   // delete part
-  uint16_t del_val = query_del_part(index);
+  uint32_t del_val = query_del_part(index);
   result -= del_val;
+  if(index==1000){
+    std::cout << "query " << result << ' ' << del_val << std::endl;
+  }
   return result;
 }
 
@@ -459,8 +465,8 @@ int32_t Diamond<no_layer, T, hash_t>::query_carry_part(size_t index){
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
-uint16_t Diamond<no_layer, T, hash_t>::query_del_part(size_t index){
-  uint16_t min_val = std::numeric_limits<uint16_t>::max();
+uint32_t Diamond<no_layer, T, hash_t>::query_del_part(size_t index){
+  uint32_t min_val = std::numeric_limits<uint32_t>::max();
   for(size_t i = 0;i<no_hash_del;++i){
     size_t del_idx = hash_fns_del[i](index) % no_cnt_del;
     min_val = std::min(min_val, del_part[del_idx]);
@@ -533,7 +539,7 @@ size_t Diamond<no_layer, T, hash_t>::csize(const std::vector<size_t>& idxs) cons
 
 template <int32_t no_layer, typename T, typename hash_t>
 size_t Diamond<no_layer, T, hash_t>::tagsize() const{
-  return no_cnt_carry*2/8+no_cnt_del*8/8;
+  return no_cnt_carry*2/8+no_cnt_del*16/8;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
@@ -541,7 +547,7 @@ void Diamond<no_layer, T, hash_t>::clear(){
   for (int32_t i = 0; i < no_layer; ++i) {
     inc_part[i] = std::vector<uint8_t>(no_cnt[i]);
   }
-  del_part = std::vector<uint16_t>(no_cnt_del);
+  del_part = std::vector<uint32_t>(no_cnt_del);
   carry_part = std::vector<uint16_t>(no_cnt_carry);
   std::fill_n(original_cnt.begin(), no_cnt[0], 0);
   std::fill_n(decoded_cnt.begin(), no_cnt[0], 0);
