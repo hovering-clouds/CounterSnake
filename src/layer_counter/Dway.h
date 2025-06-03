@@ -784,7 +784,14 @@ std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
 
 template <int32_t no_layer, typename T>
 T Dway<no_layer, T>::query(size_t ori_index){
-  return query_with_layer(ori_index).first;
+  T result = query_with_layer(ori_index).first;
+  size_t index = (ori_index*pseed)%cNum;
+  auto it = backup_tbl.find(index);
+  if(it!=backup_tbl.end()){
+    T val = it->second << width_cnt[0];
+    result += val;
+  }
+  return result;
 }
 
 template <int32_t no_layer, typename T>
@@ -794,7 +801,7 @@ void Dway<no_layer, T>::clear_cnt(size_t ori_index){
   auto it = backup_tbl.find(index);
   if(it!=backup_tbl.end()){
     backup_tbl.erase(it);
-    return;
+    //return;
   }
   cnt_array[0][index].reset();
   for(int32_t lr = 1;lr<no_layer;++lr){
@@ -848,6 +855,7 @@ void Dway<no_layer, T>::decode(){
     size_t ori_index = (pr.first*iseed)%cNum;
     decoded_cnt[ori_index] += pr.second << width_cnt[0];
   }
+  std::cout <<"max_cnt_value: " << *std::max_element(decoded_cnt.begin(), decoded_cnt.end()) << std::endl;
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
     rsz += getUnusedNum(lr)*(width_cnt[lr]+tag_len);
