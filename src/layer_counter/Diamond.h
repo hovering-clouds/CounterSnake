@@ -410,9 +410,6 @@ void Diamond<no_layer, T, hash_t>::update_sub(size_t index, T val){
 
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update(size_t index, T val){
-  if(index==1000){
-    std::cout << "update " << val << std::endl;
-  }
   update_num += 1;
   original_cnt[index]+=val;
   if(val>=0){
@@ -448,9 +445,6 @@ T Diamond<no_layer, T, hash_t>::query(size_t index){
   // delete part
   uint32_t del_val = query_del_part(index);
   result -= del_val;
-  if(index==1000){
-    std::cout << "query " << result << ' ' << del_val << std::endl;
-  }
   return result;
 }
 
