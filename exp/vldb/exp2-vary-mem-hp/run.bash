@@ -16,7 +16,7 @@ if [[ ! -x "$exe_path" || ! -f "$exe_path" ]]; then
 fi
 
 # 遍历 1M 到 4M 的配置
-suffixes=("20M" "40M" "60M" "80M" "100M")
+suffixes=("20K" "40K" "60K" "80K" "100K")
 for suffix in "${suffixes[@]}"; do
   config_dir="../exp/vldb/exp2-vary-mem-hp/config_${suffix}"
   config_file="${config_dir}/${config_prefix}_${suffix}.toml"
