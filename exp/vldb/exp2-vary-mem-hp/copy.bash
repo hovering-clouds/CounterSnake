@@ -1,6 +1,6 @@
 #!/bin/bash
-old_pfx="80M"
-new_pfx="100M"
+old_pfx="60K"
+new_pfx="100K"
 
 mkdir -p config_${new_pfx}
 for f in config_${old_pfx}/*; do
