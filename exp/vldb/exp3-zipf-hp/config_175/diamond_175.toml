@@ -1,0 +1,28 @@
+[Lc] # Layer Counter
+  
+  [Lc.diamond]
+    sketch = ["HP"]
+    data = "../data/zipf-175.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 6, 6]
+    no_cnt_ratio = [0.3, 0.3, 0.3]
+    cnt_del_ratio = 0.8
+    cnt_carry_ratio = 1.2
+    no_hash_inc = 3
+    no_hash_del = 3
+    no_hash_carry = 3
+
+[HP]
+
+  [HP.para]
+    depth = 3
+    width = 32000
+
+  [HP.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 25000
+
+  [HP.test]
+    update = ["RATE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1", "RCD"]

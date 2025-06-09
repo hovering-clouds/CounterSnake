@@ -1,0 +1,21 @@
+[Lc] # Layer Counter
+  
+  [Lc.dway]
+    sketch = ["CM"]
+    data = "../data/zipf-075.bin"
+    cnt_method = "InPacket"
+    group_num = 64
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 6, 4]
+    dway = [0, 24, 48, 2]
+
+
+[CM]
+
+  [CM.para]
+    depth = 4
+    width = 2001
+
+  [CM.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]

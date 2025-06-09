@@ -1,0 +1,20 @@
+[Lc] # Layer Counter
+
+  [Lc.sac]
+    sketch = ["CM"]
+    data = "../data/zipf-125.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    cnt_len = 12
+
+
+
+[CM]
+
+  [CM.para]
+    depth = 4
+    width = 12001
+
+  [CM.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
