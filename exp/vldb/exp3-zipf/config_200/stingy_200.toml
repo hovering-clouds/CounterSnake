@@ -2,7 +2,7 @@
 
   [Lc.stingy]
     sketch = ["CM"]
-    data = "../data/zipf-175.bin"
+    data = "../data/zipf-200.bin"
     cnt_method = "InPacket"
     format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
 
@@ -11,7 +11,7 @@
 
   [CM.para]
     depth = 4
-    width = 700001
+    width = 4000001
 
   [CM.test]
     update = ["RATE"]
