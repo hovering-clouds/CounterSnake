@@ -68,6 +68,7 @@ public:
     }
     std::cout << "Average flow size: " << 1.0 * total_size / flow_number
               << std::endl;
+    std::cout << "Total: " << total_size << std::endl;
 
     // Sample randomized flow keys
     for (int32_t i = 0; i < flow_number; ++i) {

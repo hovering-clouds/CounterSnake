@@ -9,6 +9,7 @@
  */
 #include "synthesizer.h"
 #include <getopt.h>
+#include <iostream>
 
 int main(int argc, char *argv[]) {
   
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
               << std::endl;
   };
 
-  while ((opt = getopt_long(argc, argv, "cn:h", pcap_parser_options,
+  while ((opt = getopt_long(argc, argv, "c:n:h", pcap_parser_options,
                             &option_index)) != -1) {
     switch (opt) {
     case 0:
