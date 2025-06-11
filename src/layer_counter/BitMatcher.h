@@ -338,6 +338,10 @@ class BitMatcher : public LayerCounter<0, T> {
   void update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_val);
 public:
   size_t update_num;
+  size_t update_mem_access;
+  size_t max_update_mem_access;
+  size_t query_mem_access;
+  size_t max_query_mem_access;
   /**
    * @brief Construct BitMatcher and initialize inner Buckets.
    * 
@@ -422,6 +426,7 @@ public:
    * @return The counter value
    */
   T queryWithSize(size_t index, size_t &len){
+    size_t tmp_mem_access = 1;
     size_t bktIdx1 = hash_fn(index)%bNum;
     uint8_t fp = (index*pseed)%256;
     size_t bktIdx2 = (bktIdx1^fp)%bNum;
@@ -431,8 +436,13 @@ public:
     int32_t pos1 = bkt1.queryWithPos(fp, result);
     if(pos1!=-1){
       len = bkt1.getCntLen(pos1);
+      query_mem_access += tmp_mem_access;
+      max_query_mem_access = std::max(max_query_mem_access, tmp_mem_access);
       return result;
     } else {
+      tmp_mem_access += 1;
+      query_mem_access += tmp_mem_access;
+      max_query_mem_access = std::max(max_query_mem_access, tmp_mem_access);
       int32_t pos2 = bkt2.queryWithPos(fp, result);
       if(pos2!=-1){
         len = bkt2.getCntLen(pos2);
@@ -570,6 +580,10 @@ public:
     }
     rsz = 0;
     update_num = 0;
+    update_mem_access = 0;
+    query_mem_access = 0;
+    max_update_mem_access = 0;
+    max_query_mem_access = 0;
     failure_num = 0;
     std::fill_n(original_cnt.begin(), cNum, 0);
     std::fill_n(decoded_cnt.begin(), cNum, 0);
@@ -811,6 +825,10 @@ void BitMatcher<T>::initBucket(size_t counter_num, size_t bucket_num){
   bNum = 1<<bPow;
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
   failure_num = 0;
   hash_fn = Hash::AwareHash();
   int32_t candidate = 31;
@@ -901,17 +919,20 @@ void BitMatcher<T>::update_exist(size_t bktId, int32_t pos, uint8_t fp, T new_va
 template <typename T>
 void BitMatcher<T>::update(size_t index, T val){
   update_num+=1;
+  size_t tmp_mem_access = 0;
   original_cnt[index] += val;
   uint8_t fp = (index*pseed)%256;
   uint64_t hashval = hash_fn(index);
   Bucket<T> &bkt1 = buckets.at(hashval%bNum);
   Bucket<T> &bkt2 = buckets.at((hashval^fp)%bNum);
   T result1, result2;
+  tmp_mem_access +=1;
   int32_t pos1 = bkt1.queryWithPos(fp, result1);
   int32_t pos2 = bkt2.queryWithPos(fp, result2);
   if(pos1!=-1){
     update_exist(hashval%bNum, pos1, fp, result1+val);
   } else if(pos2!=-1) {
+    tmp_mem_access +=1;
     update_exist((hashval^fp)%bNum, pos2, fp, result2+val);
   } else { // new item
     bool suc1 = bkt1.insertCounter(fp, val);
@@ -920,10 +941,14 @@ void BitMatcher<T>::update(size_t index, T val){
       if(!suc2){failure_num++;}
     }
   }
+  update_mem_access += tmp_mem_access;
+  max_update_mem_access = std::max(max_update_mem_access, tmp_mem_access);
 }
 
 template <typename T>
 void BitMatcher<T>::decode(){
+  query_mem_access = 0;
+  max_query_mem_access = 0;
 #ifdef TEST_DECODE_TIME
   auto MY_TIMER = std::chrono::microseconds::zero();
   auto MY_TICK = std::chrono::steady_clock::now();
@@ -953,6 +978,8 @@ void BitMatcher<T>::decode(){
     num+=buckets[i].empty_num();
   }
   std::cout << "empty slots: " << num << std::endl;
+  std::cout <<"update_access: average " << 1.0*update_mem_access/update_num << ", max " << max_update_mem_access << std::endl;
+  std::cout <<"query_access: average " << 1.0*query_mem_access/cNum << ", max " << max_query_mem_access << std::endl;
 }
 
 template <typename T>

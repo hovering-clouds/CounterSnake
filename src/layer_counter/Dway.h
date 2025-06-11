@@ -293,6 +293,10 @@ private:
   std::pair<T, int32_t> query_with_layer(size_t ori_index);
 public:
   size_t update_num;
+  size_t update_mem_access;
+  size_t max_update_mem_access;
+  size_t query_mem_access;
+  size_t max_query_mem_access;
   /**
    * @brief Construct dway sharing structure and initialize inner counters.
    * 
@@ -492,6 +496,10 @@ public:
     std::fill_n(original_cnt.begin(), cNum, 0);
     rsz = 0;
     update_num = 0;
+    update_mem_access = 0;
+    query_mem_access = 0;
+    max_update_mem_access = 0;
+    max_query_mem_access = 0;
   }
 };
 
@@ -610,6 +618,10 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
   gNum = group_num;
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
   di = dway;
   width_cnt = _width_cnt;
   if (di.size() != no_layer) {
@@ -681,9 +693,11 @@ void Dway<no_layer, T>::initCounter( size_t counter_num,
 template <int32_t no_layer, typename T>
 void Dway<no_layer, T>::update(size_t ori_index, T val){
   update_num+=1;
+  size_t tmp_mem_access = 0;
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
+    tmp_mem_access += 1;
     T of_val = cnt_array[lr][index] + val;
     //std::cout << lr << ' ' << index << ' ' <<of_val << std::endl;
     if(of_val!=0){
@@ -693,12 +707,14 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
             std::to_string(of_val) + ".");
       }
       if(lr==0){
+        tmp_mem_access += 1;
         auto it = backup_tbl.find(index);
         if(it!=backup_tbl.end()){
           it->second += of_val;
-          return;
+          break;
         }
       }
+      tmp_mem_access += 1;
       val = of_val;
       size_t gid = index/gNum;
       dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
@@ -724,6 +740,7 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
       // Case 3: excessive overflow, insert into the backup table
       if(!matched){
         of_num[lr]++;
+        tmp_mem_access += 1;
         insert_backup(lr, index, of_val);
         break;
       }
@@ -731,6 +748,8 @@ void Dway<no_layer, T>::update(size_t ori_index, T val){
       break;
     }
   }
+  update_mem_access += tmp_mem_access;
+  max_update_mem_access = std::max(max_update_mem_access, tmp_mem_access);
 }
 
 
@@ -753,6 +772,7 @@ inline void Dway<no_layer, T>::insert_backup(int32_t layer, size_t index, T of_v
 template <int32_t no_layer, typename T>
 std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
+  size_t tmp_mem_access = 1;
   size_t cur_bits = width_cnt[0];
   T result = cnt_array[0][index].getVal();
   //auto it = backup_tbl.find(index);
@@ -763,11 +783,13 @@ std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
   //}
   int32_t lr;
   for(lr = 1;lr<no_layer;++lr){
+    tmp_mem_access += 1;
     size_t gid = index/gNum;
     dtag_t tag = gNum+(dtag_t)index%gNum; // set valid bit as 1
     bool matched = false;
     for(size_t nextId = gid*di[lr]; nextId<(gid+1)*di[lr];++nextId){
       if(tag_array[lr][nextId]==tag){
+        tmp_mem_access += 1;
         index = nextId;
         result+=cnt_array[lr][index].getVal()<<cur_bits;
         cur_bits+= width_cnt[lr];
@@ -779,6 +801,8 @@ std::pair<T, int32_t> Dway<no_layer, T>::query_with_layer(size_t ori_index){
       break;
     }
   }
+  max_query_mem_access = std::max(max_query_mem_access, tmp_mem_access);
+  query_mem_access += tmp_mem_access;
   return std::make_pair(result, lr);
 }
 
@@ -832,6 +856,8 @@ void Dway<no_layer, T>::decode(){
     accum_bits[lr] = accum_bits[lr-1]+width_cnt[lr];
   }
   size_t tag_len = ceil(log2(gNum));
+  query_mem_access = 0;
+  max_query_mem_access = 0;
   // decoded values
 #ifdef TEST_DECODE_TIME
   auto MY_TIMER = std::chrono::microseconds::zero();
@@ -856,6 +882,8 @@ void Dway<no_layer, T>::decode(){
     decoded_cnt[ori_index] += pr.second << width_cnt[0];
   }
   std::cout <<"max_cnt_value: " << *std::max_element(decoded_cnt.begin(), decoded_cnt.end()) << std::endl;
+  std::cout <<"update_access: average " << 1.0*update_mem_access/update_num << ", max " << max_update_mem_access << std::endl;
+  std::cout <<"query_access: average " << 1.0*query_mem_access/cNum << ", max " << max_query_mem_access << std::endl;
   // get rsz
   for(int32_t lr=1;lr<no_layer;++lr){
     rsz += getUnusedNum(lr)*(width_cnt[lr]+tag_len);

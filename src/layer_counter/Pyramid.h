@@ -106,6 +106,10 @@ private:
 
 public:
   size_t update_num;
+  size_t update_mem_access;
+  size_t max_update_mem_access;
+  size_t query_mem_access;
+  size_t max_query_mem_access;
   /**
    * @brief Construct Pyramid and initialize inner counters.
    * 
@@ -303,14 +307,20 @@ void Pyramid<no_layer, T>::initPyramid(size_t counter_num, const std::vector<siz
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
 }
 
 template <int32_t no_layer, typename T>
 void Pyramid<no_layer, T>::update(size_t ori_index, T val){
   update_num += 1;
+  size_t tmp_access = 0;
   original_cnt[ori_index]+=val;
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
+    tmp_access += 1;
     T of_val = cnt_array[lr][index] + val;
     if(of_val==0){break;}
     else{ // update upper levels
@@ -324,6 +334,8 @@ void Pyramid<no_layer, T>::update(size_t ori_index, T val){
       index = index/2;
     }
   }
+  update_mem_access += tmp_access;
+  max_update_mem_access = std::max(max_update_mem_access, tmp_access);
 }
 
 template <int32_t no_layer, typename T>
@@ -343,10 +355,12 @@ template <int32_t no_layer, typename T>
 T Pyramid<no_layer, T>::query(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
   size_t cur_bits = 0;
+  size_t tmp_mem_access = 1;
   T result = cnt_array[0][index].getVal();
   for(int32_t lr = 1;lr<no_layer;++lr){
     if(!status_bits[lr-1][index]){break;} // no overflow to this layer
     cur_bits+=width_cnt[lr-1];
+    tmp_mem_access+=1;
     T cur_val = cnt_array[lr][index/2].getVal(); // the value from parent node
     if(status_bits[lr-1][get_sibling(index)]){ // the sibling also overflowed
       cur_val -= 1;
@@ -355,11 +369,15 @@ T Pyramid<no_layer, T>::query(size_t ori_index){
     result+=cur_val<<cur_bits;
     index/=2;
   }
+  max_query_mem_access = std::max(max_query_mem_access, tmp_mem_access);
+  query_mem_access += tmp_mem_access;
   return result;
 }
 
 template <int32_t no_layer, typename T>
 void Pyramid<no_layer, T>::decode(){
+  query_mem_access = 0;
+  max_query_mem_access = 0;
 #ifdef TEST_DECODE_TIME
   auto MY_TIMER = std::chrono::microseconds::zero();
   auto MY_TICK = std::chrono::steady_clock::now();
@@ -375,6 +393,8 @@ void Pyramid<no_layer, T>::decode(){
   printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
   printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
+  std::cout <<"update_access: average " << 1.0*update_mem_access/update_num << ", max " << max_update_mem_access << std::endl;
+  std::cout <<"query_access: average " << 1.0*query_mem_access/cNum << ", max " << max_query_mem_access << std::endl;
   std::vector<size_t> tmp_cnt(cNum, 0);
   std::fill_n(size_cnt.begin(), no_cnt[no_layer-1], width_cnt[no_layer-1]);
   for(int32_t lr = no_layer-1; lr > 0; --lr){
@@ -433,6 +453,10 @@ void Pyramid<no_layer, T>::clear(){
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
 }
 
 template <int32_t no_layer, typename T>

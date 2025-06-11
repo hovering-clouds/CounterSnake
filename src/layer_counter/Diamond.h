@@ -126,6 +126,10 @@ private:
 
 public:
   size_t update_num;
+  size_t update_mem_access;
+  size_t max_update_mem_access;
+  size_t query_mem_access;
+  size_t max_query_mem_access;
   /**
    * @brief Construct Diamond and initialize inner counters.
    * 
@@ -338,10 +342,15 @@ void Diamond<no_layer, T, hash_t>::initDiamond(const std::vector<size_t> &_no_cn
   rsz = 0;
   cNum = no_cnt[0];
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update_add(size_t index, T val){
+  update_mem_access += 1;
   T new_val = inc_part[0][index] + val;
   T of_val = new_val >> width_cnt[0];
   new_val = new_val & ((1 << width_cnt[0])-1);
@@ -357,6 +366,7 @@ void Diamond<no_layer, T, hash_t>::update_add_overflow(size_t index, T val){
   std::vector<size_t> idxs(no_hash_inc);
   for(lr = 1;lr<no_layer;++lr){
     uint8_t min_val = 255;
+    update_mem_access += no_hash_inc;
     for(size_t i = 0;i<no_hash_inc;++i){
       size_t inc_idx = hash_fns_inc[lr][i](index) % no_cnt[lr];
       idxs[i] = inc_idx;
@@ -385,6 +395,7 @@ void Diamond<no_layer, T, hash_t>::update_add_overflow(size_t index, T val){
     }
   }
   // set carry part to at least `lr`
+  update_mem_access+=no_hash_carry;
   for(size_t i = 0;i<no_hash_carry;++i){
     size_t carry_idx = hash_fns_carry[i](index) % no_cnt_carry;
     carry_part[carry_idx] = std::max(uint8_t(lr), carry_part[carry_idx]);
@@ -395,6 +406,7 @@ template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update_sub(size_t index, T val){
   std::vector<size_t> idxs(no_hash_del);
   uint32_t min_val = std::numeric_limits<uint32_t>::max();
+  update_mem_access += no_hash_del;
   for(size_t i = 0;i<no_hash_del;++i){
     size_t del_idx = hash_fns_del[i](index) % no_cnt_del;
     idxs[i] = del_idx;
@@ -411,12 +423,14 @@ void Diamond<no_layer, T, hash_t>::update_sub(size_t index, T val){
 template <int32_t no_layer, typename T, typename hash_t>
 void Diamond<no_layer, T, hash_t>::update(size_t index, T val){
   update_num += 1;
+  size_t tmp_access = update_mem_access;
   original_cnt[index]+=val;
   if(val>=0){
     update_add(index, val);
   } else {
     update_sub(index, val);
   }
+  max_update_mem_access = std::max(max_update_mem_access, update_mem_access-tmp_access);
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
@@ -432,6 +446,7 @@ void Diamond<no_layer, T, hash_t>::clear_cnt(size_t index){
 
 template <int32_t no_layer, typename T, typename hash_t>
 T Diamond<no_layer, T, hash_t>::query(size_t index){
+  size_t tmp_access = query_mem_access;
   // query carry part
   int32_t depth = query_carry_part(index);
   // increment part
@@ -445,12 +460,14 @@ T Diamond<no_layer, T, hash_t>::query(size_t index){
   // delete part
   uint32_t del_val = query_del_part(index);
   result -= del_val;
+  max_query_mem_access = std::max(max_query_mem_access, query_mem_access-tmp_access);
   return result;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
 int32_t Diamond<no_layer, T, hash_t>::query_carry_part(size_t index){
   int32_t depth = no_layer;
+  query_mem_access += no_hash_carry;
   for(size_t i = 0;i<no_hash_carry;++i){
     size_t carry_idx = hash_fns_carry[i](index) % no_cnt_carry;
     depth = std::min(depth, int32_t(carry_part[carry_idx]));
@@ -461,6 +478,7 @@ int32_t Diamond<no_layer, T, hash_t>::query_carry_part(size_t index){
 template <int32_t no_layer, typename T, typename hash_t>
 uint32_t Diamond<no_layer, T, hash_t>::query_del_part(size_t index){
   uint32_t min_val = std::numeric_limits<uint32_t>::max();
+  query_mem_access += no_hash_del;
   for(size_t i = 0;i<no_hash_del;++i){
     size_t del_idx = hash_fns_del[i](index) % no_cnt_del;
     min_val = std::min(min_val, del_part[del_idx]);
@@ -471,6 +489,7 @@ uint32_t Diamond<no_layer, T, hash_t>::query_del_part(size_t index){
 template <int32_t no_layer, typename T, typename hash_t>
 uint8_t Diamond<no_layer, T, hash_t>::query_inc_part(int32_t lr, size_t index){
   uint8_t min_val = 255;
+  query_mem_access += no_hash_inc;
   for(size_t i = 0;i<no_hash_inc;++i){
     size_t inc_idx = hash_fns_inc[lr][i](index) % no_cnt[lr];
     min_val = std::min(min_val, inc_part[lr][inc_idx]);
@@ -493,6 +512,8 @@ void Diamond<no_layer, T, hash_t>::decode(){
   //  rsz+=width_cnt[lr]*getEmptyNum(lr);
   //}
   rsz=no_cnt_carry*2+no_cnt_del*8;
+  query_mem_access = 0;
+  max_query_mem_access = 0;
 #ifdef TEST_DECODE_TIME
   auto MY_TIMER = std::chrono::microseconds::zero();
   auto MY_TICK = std::chrono::steady_clock::now();
@@ -508,6 +529,8 @@ void Diamond<no_layer, T, hash_t>::decode(){
   printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
   printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
+  std::cout <<"update_access: average " << 1.0*update_mem_access/update_num << ", max " << max_update_mem_access << std::endl;
+  std::cout <<"query_access: average " << 1.0*query_mem_access/cNum << ", max " << max_query_mem_access << std::endl;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
@@ -548,6 +571,10 @@ void Diamond<no_layer, T, hash_t>::clear(){
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>

@@ -136,6 +136,7 @@ private:
     while (true){
       try_num++;
       index = (index+pseed)%cNum;
+      update_mem_access+=1;
       if(cnt_array[0][index]!=KICK_TAG){
         return index;
       }
@@ -170,6 +171,10 @@ private:
 
 public:
   size_t update_num;
+  size_t update_mem_access;
+  size_t max_update_mem_access;
+  size_t query_mem_access;
+  size_t max_query_mem_access;
   /**
    * @brief Construct Stingy and initialize inner counters.
    * 
@@ -362,6 +367,10 @@ void Stingy<no_layer, T>::initCounter(size_t counter_num){
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
 }
 
 template <int32_t no_layer, typename T>
@@ -373,6 +382,7 @@ bool Stingy<no_layer, T>::set_counter(size_t index, T val){
       return false;
     }
   }
+  //update_mem_access += 1;
   cnt_array[0][index] = (val % 62)+1; // maps the value into [1, 62]
   val /= 62;
   if(val==0){
@@ -383,12 +393,15 @@ bool Stingy<no_layer, T>::set_counter(size_t index, T val){
   for(int32_t lr = 1;lr<no_layer;++lr){
     last_index = index;
     index/=2;
+    update_mem_access+=1;
     if (cnt_array[lr][index]==NULL_VAL) { // first use
       if (check_parent_non_empty(lr, index)){
+        update_mem_access += 1;
         return false;
       }
       if (check_sibling_non_empty(lr-1, last_index)){
         // kick out the other carry chain, won't disrupt the intended value of the current chain
+        update_mem_access += 1;
         kick_out_mid(lr-1, get_sibling(last_index), false); 
       }
     }
@@ -448,15 +461,18 @@ size_t Stingy<no_layer, T>::kick_out_with_value(size_t index, T add_val){
 template <int32_t no_layer, typename T>
 void Stingy<no_layer, T>::updateOne(int32_t lr, size_t index){
   if(lr>=no_layer){std::cout << lr << std::endl;}
+  update_mem_access += 1;
   assert(lr<no_layer && cnt_array[lr][index]!=KICK_TAG);
   // first use
   if(cnt_array[lr][index]==NULL_VAL){
+    update_mem_access += 1;
     if (check_parent_non_empty(lr, index)){
       size_t nxt_index = kick_out_mid(lr, index, true); // cnt_arry[lr, index] is NULL, but we can still locate the carry chain anyway
       return;
     }
     if(lr>0){
       size_t child = get_nonempty_child(lr, index);
+      //update_mem_access += 1;
       if (check_sibling_non_empty(lr-1, child)){
         kick_out_mid(lr-1, get_sibling(child), false);
       }
@@ -476,14 +492,17 @@ template <int32_t no_layer, typename T>
 void Stingy<no_layer, T>::update(size_t ori_index, T val){
   assert(val>=0);
   update_num += 1;
+  size_t tmp_access = update_mem_access;
   original_cnt[ori_index]+=val;
   size_t index = ori_index;
   for(T i = 0; i<val; ++i){
+    //update_mem_access+=1;
     if(cnt_array[0][index] == KICK_TAG){
       index = find_next_pos(index);
     }
     updateOne(0, index);
   }
+  max_update_mem_access = std::max(max_update_mem_access, update_mem_access-tmp_access);
 }
 
 template <int32_t no_layer, typename T>
@@ -501,9 +520,12 @@ void Stingy<no_layer, T>::do_clear_cnt(size_t index){
 template <int32_t no_layer, typename T>
 std::pair<T, size_t> Stingy<no_layer, T>::query_with_size(size_t ori_index){
   size_t index = ori_index;
+  size_t tmp_access = 0;
   while (cnt_array[0][index] == KICK_TAG) {
+    tmp_access+=1;
     index = (index + pseed)%cNum;
   }
+  tmp_access+=1;
   if (cnt_array[0][index]==NULL_VAL){
     return std::make_pair(0, 6);
   }
@@ -512,15 +534,20 @@ std::pair<T, size_t> Stingy<no_layer, T>::query_with_size(size_t ori_index){
   int32_t lr;
   for(lr = 1;lr<no_layer;++lr){
     index /= 2;
+    tmp_access+=1;
     if(cnt_array[lr][index]==NULL_VAL){break;} // no overflow to this layer
     result+=(cnt_array[lr][index]-1)*cur_times;
     cur_times *= 3;
   }
+  max_query_mem_access = std::max(max_query_mem_access, tmp_access);
+  query_mem_access += tmp_access;
   return std::make_pair(result, size_t(2*lr+4));
 }
 
 template <int32_t no_layer, typename T>
 void Stingy<no_layer, T>::decode(){
+  query_mem_access = 0;
+  max_query_mem_access = 0;
 #ifdef TEST_DECODE_TIME
   auto MY_TIMER = std::chrono::microseconds::zero();
   auto MY_TICK = std::chrono::steady_clock::now();
@@ -538,6 +565,8 @@ void Stingy<no_layer, T>::decode(){
   printf("\nDECODE COST %jdus\n", static_cast<intmax_t>(MY_TIMER.count()));
   printf("\nQuery thrpt %lfMops\n", double(cNum)/MY_TIMER.count());
 #endif
+  std::cout <<"update_access: average " << 1.0*update_mem_access/update_num << ", max " << max_update_mem_access << std::endl;
+  std::cout <<"query_access: average " << 1.0*query_mem_access/cNum << ", max " << max_query_mem_access << std::endl;
   for(int32_t lr = 1;lr<no_layer;++lr){
     rsz+=2*getEmptyNum(lr);
   }
@@ -574,6 +603,10 @@ void Stingy<no_layer, T>::clear(){
   std::fill_n(size_cnt.begin(), no_cnt[0], 0);
   rsz = 0;
   update_num = 0;
+  update_mem_access = 0;
+  query_mem_access = 0;
+  max_update_mem_access = 0;
+  max_query_mem_access = 0;
 }
 
 template <int32_t no_layer, typename T>

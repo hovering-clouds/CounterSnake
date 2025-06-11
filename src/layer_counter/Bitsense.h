@@ -138,6 +138,7 @@ private:
    *
    */
   int32_t total_update_time;
+  size_t max_update_mem_access;
 
   double est_ARE;
   int32_t est_ERROR_TIME;
@@ -789,6 +790,7 @@ void BitSense<no_layer, T, hash_t>::updateCnt(size_t index, T val) {
                             std::to_string(index) + " instead.");
   }
   have_decoded = false;
+  int32_t tmp_access = access_time;
 #ifndef RECORD_ACCESS_TIME
   // lazy update policy
   lazy_update[index] += val;
@@ -798,6 +800,7 @@ void BitSense<no_layer, T, hash_t>::updateCnt(size_t index, T val) {
 #endif
   // original counters
   original_cnt[index] += val;
+  max_update_mem_access = std::max(max_update_mem_access, size_t(access_time-tmp_access));
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
@@ -872,6 +875,7 @@ void BitSense<no_layer, T, hash_t>::decode(){
 #endif
   printf("\nDECODER END!\n");
   have_decoded = true;
+  std::cout <<"update_access: average " << (double)access_time / total_update_time << ", max " << max_update_mem_access << std::endl;
 }
 
 template <int32_t no_layer, typename T, typename hash_t>
