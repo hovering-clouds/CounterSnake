@@ -295,7 +295,7 @@ void Pyramid<no_layer, T>::initPyramid(size_t counter_num, const std::vector<siz
   for (int32_t i = 0; i < no_layer; ++i) {
     cnt_array[i] = std::vector<Util::DynamicIntX<T>>(no_cnt[i], {width_cnt[i]});
   }
-  for (int32_t i = 0; i < no_layer-1; ++i) {
+  for (int32_t i = 0; i < no_layer; ++i) {
     status_bits[i] = std::vector<bool>(no_cnt[i], false);
   }
   // original counters, value initialized
@@ -325,9 +325,17 @@ void Pyramid<no_layer, T>::update(size_t ori_index, T val){
     if(of_val==0){break;}
     else{ // update upper levels
       if(lr==no_layer-1){
-        throw std::overflow_error(
-            "Counter overflow at the last layer in Bucket, overflow by " +
-            std::to_string(of_val) + ".");
+        if(of_val==1 && status_bits[lr][index]){
+          status_bits[lr][index] = false;
+          break;
+        } else if(of_val==-1 && !status_bits[lr][index]){
+          status_bits[lr][index] = true;
+          break;
+        } else {
+          throw std::overflow_error(
+              "Counter overflow at the last layer in Bucket, overflow by " +
+              std::to_string(of_val) + ".");
+        }
       }
       status_bits[lr][index] = true;
       val = of_val;
@@ -344,7 +352,7 @@ void Pyramid<no_layer, T>::clear_cnt(size_t ori_index){
   size_t index = (ori_index*pseed)%cNum;
   for(int32_t lr = 0;lr<no_layer;++lr){
     cnt_array[lr][index].reset();
-    if(lr+1 < no_layer && status_bits[lr][index]){
+    if(status_bits[lr][index]){
       status_bits[lr][index] = false;
       index = index/2;
     }else{break;}
@@ -357,17 +365,26 @@ T Pyramid<no_layer, T>::query(size_t ori_index){
   size_t cur_bits = 0;
   size_t tmp_mem_access = 1;
   T result = cnt_array[0][index].getVal();
+  bool flag = false;
   for(int32_t lr = 1;lr<no_layer;++lr){
-    if(!status_bits[lr-1][index]){break;} // no overflow to this layer
+    if(!status_bits[lr-1][index]){flag=true;break;} // no overflow to this layer
     cur_bits+=width_cnt[lr-1];
     tmp_mem_access+=1;
     T cur_val = cnt_array[lr][index/2].getVal(); // the value from parent node
-    if(status_bits[lr-1][get_sibling(index)]){ // the sibling also overflowed
-      cur_val -= 1;
-      if(cur_val<0){cur_val = 0;}
-    }
+    //if(status_bits[lr-1][get_sibling(index)]){ // the sibling also overflowed
+    //  cur_val -= 1;
+    //  if(cur_val<0){cur_val = 0;}
+    //}
     result+=cur_val<<cur_bits;
     index/=2;
+  }
+  cur_bits+=width_cnt[no_layer-1];
+  if(!flag){
+    //std::cout << no_cnt[no_layer-1] << ' ' << index << std::endl;
+    //std::cout << status_bits[no_layer-1][index] << std::endl;
+    if(status_bits[no_layer-1][index]){
+      result -= 1<<cur_bits;
+    }
   }
   max_query_mem_access = std::max(max_query_mem_access, tmp_mem_access);
   query_mem_access += tmp_mem_access;

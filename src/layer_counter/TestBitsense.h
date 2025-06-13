@@ -18,6 +18,7 @@
 #include <sketch_test/LcESTest.h>
 #include <sketch_test/LcMVTest.h>
 #include <sketch_test/LcSLTest.h>
+#include <sketch_test/LcCSTest.h>
 
 #define BS_CONFIG_PATH "Lc.bs"
 
@@ -80,6 +81,8 @@ void TestBitsense::initPtr(toml::array& sketch_list,
       testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BS MVSketch", config_file, data, cnt_method));
     } else if(str.compare("SL")==0){ //SketchLearn
       testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BS SketchLearn", config_file, data, cnt_method));
+    } else if(str.compare("CS")==0){ //CountSketch
+      testPtr.push_back(std::make_unique<LcCSTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BS CountSketch", config_file, data, cnt_method));
     }
   }
 }
@@ -147,7 +150,7 @@ void TestBitsense::runTest() {
     no_cnt.push_back(Util::NextPrime(std::ceil(last_layer * no_cnt_ratio)));
   }
   aux_width = Util::NextPrime(std::ceil(no_cnt[1]*aux_width_ratio));
-  counter.initBs(no_cnt, width_cnt, no_hash, false, true, aux_depth, aux_width);
+  counter.initBs(no_cnt, width_cnt, no_hash, true, true, aux_depth, aux_width);
   auto MY_TICK = std::chrono::steady_clock::now();
   for(auto&& ptr: testPtr){
     ptr->doUpdate();

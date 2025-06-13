@@ -18,6 +18,7 @@
 #include <sketch_test/LcESTest.h>
 #include <sketch_test/LcMVTest.h>
 #include <sketch_test/LcSLTest.h>
+#include <sketch_test/LcCSTest.h>
 
 #define BM_CONFIG_PATH "Lc.bitmatcher"
 
@@ -80,6 +81,8 @@ void TestBitMatcher::initPtr(toml::array& sketch_list,
       testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM MVSketch", config_file, data, cnt_method));
     } else if(str.compare("SL")==0){ //SketchLearn
       testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM SketchLearn", config_file, data, cnt_method));
+    } else if(str.compare("CS")==0){ //CountSketch
+      testPtr.push_back(std::make_unique<LcCSTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("BM CountSketch", config_file, data, cnt_method));
     }
   }
 }

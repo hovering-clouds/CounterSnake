@@ -18,6 +18,7 @@
 #include <sketch_test/LcESTest.h>
 #include <sketch_test/LcMVTest.h>
 #include <sketch_test/LcSLTest.h>
+#include <sketch_test/LcCSTest.h>
 
 #define PYRAMID_CONFIG_PATH "Lc.pyramid"
 
@@ -80,6 +81,8 @@ void TestPyramid::initPtr(toml::array& sketch_list,
       testPtr.push_back(std::make_unique<LcMVTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Pyramid MVSketch", config_file, data, cnt_method));
     } else if(str.compare("SL")==0){ //SketchLearn
       testPtr.push_back(std::make_unique<LcSLTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Pyramid SketchLearn", config_file, data, cnt_method));
+    } else if(str.compare("CS")==0){ //CountSketch
+      testPtr.push_back(std::make_unique<LcCSTest<KEYLEN, LAYERNUM, COUNTER_TYPR, Hash::AwareHash>>("Pyramid CountSketch", config_file, data, cnt_method));
     }
   }
 }
