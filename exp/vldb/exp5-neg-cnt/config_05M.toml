@@ -1,0 +1,68 @@
+[Lc] # Layer Counter
+  
+  [Lc.bitmatcher]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    bkt_rate = 5.0
+  
+  [Lc.bs]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    no_cnt_ratio = 0.5
+    width_cnt = [6, 6, 4, 6]
+    no_hash = [3, 3, 3]
+    aux_width_ratio = 0.3
+    aux_depth = 3
+
+  [Lc.diamond]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 4, 4]
+    no_cnt_ratio = [0.3, 0.3, 0.3]
+    cnt_del_ratio = 0.6
+    cnt_carry_ratio = 1.2
+    no_hash_inc = 3
+    no_hash_del = 3
+    no_hash_carry = 3
+
+  [Lc.dwayneg]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    group_num = 64
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 4, 4]
+    dway = [0, 18, 4, 2]
+  
+  [Lc.pyramid]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 6, 6]
+
+  [Lc.sac]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    cnt_len = 8
+
+
+  
+[CS]
+
+  [CS.para]
+    depth = 4
+    width = 115001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  

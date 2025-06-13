@@ -1,0 +1,24 @@
+[Lc] # Layer Counter
+  
+  [Lc.bs]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    no_cnt_ratio = 0.75
+    width_cnt = [6, 6, 4, 6]
+    no_hash = [3, 3, 3]
+    aux_width_ratio = 0.2
+    aux_depth = 3
+
+
+[CS]
+
+  [CS.para]
+    depth = 3
+    width = 67001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  

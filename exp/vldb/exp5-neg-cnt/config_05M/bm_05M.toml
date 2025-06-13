@@ -1,0 +1,20 @@
+[Lc] # Layer Counter
+
+  [Lc.bitmatcher]
+    sketch = ["CS"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    bkt_rate = 5.0
+
+
+[CS]
+
+  [CS.para]
+    depth = 3
+    width = 80001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  

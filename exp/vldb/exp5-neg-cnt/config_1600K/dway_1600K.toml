@@ -1,0 +1,21 @@
+[Lc] # Layer Counter
+  
+  [Lc.dwayneg]
+    sketch = ["CS"]
+    data = "../data/kosarak.bin"
+    cnt_method = "InPacket"
+    group_num = 64
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 6, 4]
+    dway = [0, 6, 2, 2]
+
+
+[CS]
+
+  [CS.para]
+    depth = 4
+    width = 450001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]

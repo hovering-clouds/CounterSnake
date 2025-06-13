@@ -1,0 +1,25 @@
+[Lc] # Layer Counter
+  
+  [Lc.diamond]
+    sketch = ["CS"]
+    data = "../data/kosarak.bin"
+    cnt_method = "InPacket"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 6, 4]
+    no_cnt_ratio = [0.3, 0.3, 0.3]
+    cnt_del_ratio = 0.4
+    cnt_carry_ratio = 1.2
+    no_hash_inc = 3
+    no_hash_del = 3
+    no_hash_carry = 3
+
+
+[CS]
+
+  [CS.para]
+    depth = 4
+    width = 140001
+
+  [CS.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
