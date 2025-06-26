@@ -1,0 +1,5 @@
+table size: 1264
+layer 0 ratio: 963/2272076
+layer 1 ratio: 301/355020
+layer 2 ratio: 0/27740
+layer 3 ratio: 0/868

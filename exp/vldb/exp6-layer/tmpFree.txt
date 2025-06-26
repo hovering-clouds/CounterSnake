@@ -1,0 +1,4 @@
+Unused segments in layer 0: 0/2272076
+Unused segments in layer 1: 165620/355020
+Unused segments in layer 2: 14831/27740
+Unused segments in layer 3: 768/868
