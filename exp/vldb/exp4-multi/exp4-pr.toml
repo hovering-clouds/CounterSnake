@@ -1,0 +1,126 @@
+[Lc] # Layer Counter
+  
+  [Lc.dway]
+    sketch = ["PR"]
+    data = "../data/data-1000K.bin"
+    cnt_method = "InPacket"
+    group_num = 64
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 4, 4]
+    dway = [0, 16, 4, 1]
+
+
+[CM]
+
+  [CM.para]
+    depth = 3
+    width = 1000001
+
+  [CM.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE", "RCD"]
+  
+
+[FlowRadar]
+
+  [FlowRadar.para]
+    flow_filter_bit = 25801500
+    flow_filter_hash = 10
+    count_table_num = 1405100
+    count_table_hash = 3
+
+  [FlowRadar.test]
+    update = ["RATE"]
+    decode = ["TIME", "ARE", "AAE", "RATIO", "ACC", "PODF"]
+    decode_podf = 0.01
+
+
+[HP]
+
+  [HP.para]
+    depth = 5
+    width = 62222
+
+  [HP.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 10000
+
+  [HP.test]
+    update = ["RATE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1", "RCD"]
+
+
+[DT]
+
+  [DT.para]
+    num_hash = 3
+    num_group = 36000
+
+  [DT.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 8000
+
+  [DT.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
+
+
+[PR]
+  
+  [PR.para]
+    counter_length = 1200000
+    counter_hash_num = 3
+    filter_length = 18480000
+    filter_hash_num = 8
+    phi = 10
+
+  [PR.test]
+    update = ["RATE"]
+    decode = ["TIME", "ARE", "AAE", "RATIO", "PODF"]
+    decode_podf = 0.01
+
+
+[ES]
+  
+  [ES.para]
+    num_buckets = 10000
+    num_per_bucket = 1
+    l_depth = 3
+    l_width = 1200001
+
+  [ES.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+
+
+[MV]
+
+  [MV.para]
+    depth = 3
+    width = 40011
+
+  [MV.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 5000
+
+  [MV.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL","F1", "RCD"]
+
+
+[SL]
+
+  [SL.para]
+    depth = 3
+    width = 30000
+
+  [SL.data]
+    hx_method = "TopK"
+    threshold_heavy_hitter = 10000
+
+  [SL.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+    heavyhitter = ["TIME", "ARE", "PRC", "RCL", "F1"]
