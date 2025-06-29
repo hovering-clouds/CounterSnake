@@ -1,126 +1,94 @@
-# OmniSketch
+## About
 
-[OmniSketch](https://n2-sys.github.io/OmniSketch/md__r_e_a_d_m_e.html) is a C++ framework for designing, simulating and testing sketch, a telemetry technique that aims at collecting streaming statistics. It is designed to be efficient, consistent and easy to use. Currently it is supported on Windows, Linux and MacOS.
+This repo contains the C++ implementation for CounterSnake, which is a hierarchical compression framework that reduces memory consumption of sketch counters. We integrate CounterSnake with nine sketches, and also implement several SOTA frameworks for comparison. We also design a unified testing framework to run these frameworks and sketches on different datasets, which automatically gather evaluation results of their performance.
 
-## Feature Overview
+The directories looks like this graph:
 
-- **A wide variety of sketches** are implemented with minimal code. Some complicated sketches, such as ElasticSketch, are also supported. For a full list of the sketches available, check [this table](#table).
-- **An auto-testing framework** that tests sketch performance and collects interested metrics with minimal configurations.
-- **A generally applicable Counter Hierarchy framework** that enables a tremendous amount of space saving via hierarchical counter braiding, applicable to all value-based counters.
-- **Pcap Parser** parses `.pcap` and `.pcapng` files to generate streaming data that interoperates with OmniSketch. Data format of a streaming data record is customizable.
-- **Flexible definitions of a flowkey** are available. Currently, 1-tuple, 2-tuple and 5-tuple are supported.
-- **No redundant code has to be rewritten.** Designer can focus mainly on the sketch algorithm, and let the framework do the rest, e.g. data parsing and testing details.
-- Since sketching algorithms vary a lot, the framework includes only the most common methods. Do not panic! You can always write inject your own code and tell the framework to run it.
+`CounterSnake`
+├── `data`: datasets put here
+├── `doc`
+│   ├── `image`
+│   └── `tutorial`
+├── `exp`: configuration files used in our experiments
+│   ├── `old`
+│   └── `vldb`
+├── `src`
+│   ├── `common`: header files for our testing framework
+│   ├── `driver`: automatically generated driver codes
+│   ├── `impl`: implementation of some methods in `commom`
+│   ├── `layer_counter`: source codes of CounterSnake and compared frameworks
+│   ├── `pcap_parser`: scripts that convert datasets to a unified format
+│   ├── `sketch`: implementation of sketches used in our experiments 
+│   └── `sketch_test`: codes that run sketch instances and gather results
+├── `test`: unit tests to verify the implementation correctness 
+└── `third_party`: dependencies
 
-## Download & Build
 
-Download from GitHub release page:
+
+## Build
+
+### Install Dependencies
+
+We require the following dependencies to build this project on Linux or Mac.
+
+| Dependency | Installation (on Linux) | Installation (on Mac) |
+|---|---|---|
+|  **Cmake** (>=3.20) | `sudo apt-get install cmake -y` | `brew install cmake` |
+| **boost** (>=1.75) | `sudo apt-get install libboost-all-dev -y` | `brew install boost` |
+| **libpcap** (>=1.9) | `sudo apt-get install libpcap-dev -y` | `brew install libpcap` |
+| **PcapPlusPlus** (>=21.05) | Method 1. Build from [source](https://pcapplusplus.github.io/docs/install#build-from-source) using its default configuration and installation directory <br />Method 2. `brew install pcapplusplus`  | `brew install pcapplusplus` |
+
+This repo also depends on three third-party libraries, namely [eigen](https://gitlab.com/libeigen/eigen), [fmt](https://github.com/fmtlib/fmt), and [tomlplusplus](https://github.com/marzer/tomlplusplus). They are maintained as git submodules. Hence, don't forget to clone them with `git submodule update --init`. Besides, make sure your C++ compiler supports C++17 and the python interpreter version is at least 3.7 to enable essential library features.
+
+### Build Steps
+The following shell script builds the testing framework. As long as the dependencies are correctly installed, the script should run successfully. 
 ```shell
-git clone --recurse-submodules https://github.com/N2-Sys/OmniSketch.git
-cd OmniSketch
-mkdir build; cd build
-```
-
-The project is built with CMake. If an additional module of PcapParser, which is capable of parsing `.pcap/.pcapng` files in quite a versatile manner and is interoperable with OmniSketch, is requested, please define the `BUILD_PCAP_PARSER` macro by
-```shell
-cmake .. -DBUILD_PCAP_PARSER=True
-```
-Upon defining this macro, CMake automatically checks for dependencies on [PcapPlusPlus](https://github.com/seladb/PcapPlusPlus) and [pcap](https://www.tcpdump.org) libraries, so MAKE SURE you have installed these libraries in advance. The default included directory of the PcapPlusPlus header files is `/usr/local/include/pcapplusplus` (which is certainly not true on Windows). To change this default searching path, provide to CMake a new argument:
-```shell
-cmake .. -DBUILD_PCAP_PARSER=True -DPCPP_INCLUDE_PATH=[path on your system]
-# e.g. cmake .. -DBUILD_PCAP_PARSER=True -DPCPP_INCLUDE_PATH=/usr/local/include/pcapplusplus
-```
-In the simplest case, if PcapParser is not requested, the `PcapPlusPlus` and `pcap` libraries are never needed, so you can just build with
-```shell
+mkdir build && cd build
 cmake ..
+make
 ```
-Gee, it saves you a lot of work!
 
-To verify that you indeed build a runnable copy of OmniSketch, in the same directory (`build/`) run
-```shell
-ctest
-```
-If you see the line 
-```
-100% tests passed, 0 tests failed out of 8
-```
- you can proceed to poke around OmniSketch and design your new sketches.
+After executing the script, we will see a number of executable files in the `build/` directory, including:
+- vanilla sketches without optimization: CM, DT, ES, FR, HP, MV, PR, SL (no need to run them directly in our experiments)
+- compression frameworks that are integrated with the sketches: BitMatcher, Bitsense, Diamond, Dway, DwayNeg, Pyramid, Sac, Stingy
+- dataset parsers: parser, parser-kosarak, synthesizer
 
-## Design New Sketches
+Note that the executable files of our CounterSnake framework is named as Dway and DwayNeg, the latter of which support negative counters with the sign-bit encoding technique.
 
-Here is an overview of how to design your own sketch in OmniSketch. For a detailed description, please check [the docs](https://n2-sys.github.io/OmniSketch/overview.html).
+## Run
 
-1. Sketch algorithm should be in `src/sketch/`. Suppose you add a file `XXX.h` to this directory.
-2. Sketch testing procedure is defined in `src/sketch_test/`. You should name your testing file as `XXXTest.h` accordingly.
-3. Add a new sketch target in `CMakeLists.txt`. This is done in a single line `add_user_sketch(YYY XXX)`.
-4. Write down the sketch config in a toml file. The default config file is `src/sketch_config.toml`. All the sketch configs are user-defined, but typically should contain (though not required)
-  - Streaming data file
-  - Format of the streaming data record
-  - Metrics measured during testing
-  - Sketch parameters
-  - Other user-defined configs
-> It is the user who controls what, where and how to parse in the config file. Omnisketch imposes no restrictions on how you organize the toml file and what you put in there. Fortunately, OmniSketch provides a rich set of tools to help you do it in just a couple of lines.
+### Dataset Preparation
 
-5. Goto the building directory `build/`, cmake and `make` it. (CMake is needed since a new target has just been added) From the time on, if the code is modified, only `make` is needed.
-6. At this point, the sketch is compiled and linked. It is callable from the terminal with `./YYY -c config`. If no `-c` option is provided, `src/sketch_config.toml` is assumed to be the default config file. A possible output of Count Min Sketch runs as follows:
-```shell
-terminal> ./CM -c ../src/sketch_config.toml
-   INFO| Loading config from ../src/sketch_config.toml... @utils.cpp:62
-VERBOSE| Config loaded. @utils.cpp:76
-VERBOSE| Preparing test data... @data.h:718
-   INFO| Loading records from ../data/records.bin... @data.h:720
-VERBOSE| Records Loaded. @data.h:746
-DataSet: 1090120 records with 99999 keys (../data/records.bin)
-============     Count Min      ============
-  Mem Footprint: 1.52646 MB
-    Update Rate: 1853.95 Mpac/s
-     Query Rate: 1694.9 Mpac/s
-      Query ARE: 0.161831
-      Query AAE: 0.252943
-============================================
-```
-7. From now on, every time your sketch is about to run on different data and formats, or to collect some new statistics, all you have to do is simply modifying the config file. If the template header should be changed, you have to `make` a new driver.
+Before running the executable files, we should prepare the stream dataset and covert them into a format that can be accepted by the testing framework. 
+
+Currently we provide scripts for three datasets, namely [Caida](https://www.caida.org/catalog/datasets/passive_dataset/), [Kosarak](http://fimi.uantwerpen.be/data/) and Zipf. The first two can be download at the corresponding websites, and the last one is generated with our scripts.
+
+For Caida trace:
+- You should get a bunch of `.pcap` files, whose name start with 'equinix-nyc.dira.20190117-130000' or something similar. Choose one of them and put it into `data/`. 
+- We will trunctate it and only use the the first 1.0M disctinct items. To do this, modify `input` entry in `src/pcap_parser/parser.toml` as your pcap file name, and then go to `build` directory and run `./parser -c ../src/pcap_parser/parser.toml`.
+- After this, you should see a new file `data-1000K.bin` in `data/`, and this is the parsed Caida dataset.
+
+For Kosarak trace:
+- You should get a file `kosarak.dat`. 
+- Put it into `data/` and run `./parser_kosarak -i ../data/kosarak.dat -o ../data/kosarak.bin` to parse it.
+- After this, you should see a new file `kosarak.bin` in `data/`, and this is the parsed Caida dataset.
 
 
-## API Docs
-Please follow [this link](https://n2-sys.github.io/OmniSketch/annotated.html).
+For Zipf datasets:
+- Go to `src/pcap_parser/parser.toml` and change the `skew` there. You should also adjust the `flow_number` (number of disctinct items) to let the total number of items be roughly 25M.
+- Run `./synthesizer -c ../src/pcap_parser/parser.toml` to generate the file.
+- You should properly set the `output_file` name so that we end up with the following files: `zipf-000.bin`, `zipf-025.bin`, `zipf-050.bin`, `zipf-075.bin`, `zipf-100.bin`, `zipf-125.bin`, `zipf-150.bin`, `zipf-175.bin`, `zipf-200.bin`, which corresponds to skewness $0.0\sim 2.0$.
 
+### Configuration Files
 
-## Tables of Sketches
-Here are a list of all the sketches implemented and tested. The last column indicates the name of generated executable drivers, which can be modified in lines starting with `add_user_sketch` in `CMakeLists.txt`. For example, suppose there is a line saying `add_user_sketch(CM CMSketch)`. It means that one may run driver compiled from `src/sketch/CMSketch.h` and `src/test/CMSketchTest.h` by `./CM` in the building directory after making it.
+The executable files of all the compared frameworks can be run by `exec_file -c config_file`. Therefore, we must provide configuration files to each of the frameworks. It's tedious work to set all these frameworks' diverse parameters, so we have prepared these configurations files in `exp/vldb/`. 
 
-Status: **h**ave, **c**hecked, checked but with **d**oubt, **t**ested.
-<a id="table"></a>
-|                         |Status|Name of the Executable|
-| ----------------------- | ---- | -------------------- |
-| CM Sketch               | t    | CM                   |
-| CH-optimized CM Sketch  | t    | CHCM                 |
-| Count Sketch            | t    | CS                   |
-| CU Sketch               | t    | CU                   |
-| Bloom Filter            | t    | BF                   |
-| counting bloom filter   | t    |                      |
-| LD-sketch               | t    |                      |
-| MV-sketch               | t    |                      |
-| HashPipe                | t    | HP                   |
-| FM-sketch(PCSA)         | t    |                      |
-| Linear Counting         |      |                      |
-| Kmin(KMV)               |      |                      |
-| Deltoid                 | t    |                      |
-| Flow Radar              | t    | FR                   |
-| sketch learn            |      |                      |
-| elastic sketch          | t    |                      |
-| univmon                 |      |                      |
-| nitro sketch            | t    |                      |
-| reversible sketch       |      |                      |
-| Mrac                    | t    |                      |
-| k-ary sketch            | t    |                      |
-| seqHash                 |      |                      |
-| TwoLevel                | t    |                      |
-| multi-resolution bitmap |      |                      |
-| lossy count             | t    |                      |
-| space saving            | t    |                      |
-| HyperLogLog             | t    |                      |
-| Misra-Gries             | t    |                      |
-| Fast Sketch             | t    |                      |
-| CounterBraids           | t    |                      |
-| HeavyKeeper             | d    |                      |
+For example, to run CounterSnake on frequency estimation tasks (Exp\#1) with 1MB memory budget, try `./Dway -c ../exp/vldb/exp1-2-4-5-freq/config_1M/dway_1M.toml` in `build/` directory.
+
+### Run experiments
+We also provide shell scripts to run a bunch of related experiments at a time. These scripts are in the subdirectories of `exp/vldb/`. 
+
+For example, to test CounterSnake on frequency estimation tasks on all Zipf datasets (Exp\#3), try `../exp/vldb/exp3-zipf-freq/run.bash ./Dway dway` in `build/` directory. The first parameter is the path of the executable file, and the second parameter is the prefix of the configuration files (go to `../exp/vldb/exp3-zipf-freq/config_000/` and you'll see all the possible prefixes).
+
+### Gather Results
+Unfortunately, we record all results manually so there is no automatic scripts that can gather the results and turn them into nice figures presented in the paper. However, the output of the executable files should be clear to read, and the related metrics can be extracted from there.
