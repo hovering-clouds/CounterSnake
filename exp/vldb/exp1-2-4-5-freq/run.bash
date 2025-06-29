@@ -18,7 +18,7 @@ fi
 # 遍历 1M 到 4M 的配置
 suffixes=("100K" "200K" "400K" "800K" "1600K")
 for suffix in "${suffixes[@]}"; do
-  config_dir="../exp/vldb/exp2-vary-mem/config_${suffix}"
+  config_dir="../exp/vldb/exp1-2-4-5-freq/config_${suffix}"
   config_file="${config_dir}/${config_prefix}_${suffix}.toml"
 
   # 检查配置文件是否存在

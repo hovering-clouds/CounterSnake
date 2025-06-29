@@ -19,7 +19,7 @@ fi
 suffixes=("100K" "200K" "400K" "800K" "1600K")
 # suffixes=("05M" "1M" "2M" "4M" "8M")
 for suffix in "${suffixes[@]}"; do
-  config_dir="../exp/vldb/exp5-neg-cnt/config_${suffix}"
+  config_dir="../exp/vldb/exp4-neg-cnt/config_${suffix}"
   config_file="${config_dir}/${config_prefix}_${suffix}.toml"
 
   # 检查配置文件是否存在

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd '/home/liu_xunpeng/CounterSnake/exp/vldb/exp6-layer'
+cd '/home/liu_xunpeng/CounterSnake/exp/vldb/exp7-layer'
 
 # 遍历配置
 suffixes=("1" "2" "3" "4" "5" "6")

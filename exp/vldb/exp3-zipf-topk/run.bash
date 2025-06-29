@@ -18,7 +18,7 @@ fi
 # 遍历 1M 到 4M 的配置
 suffixes=("000" "025" "050" "075" "100" "125" "150" "175" "200")
 for suffix in "${suffixes[@]}"; do
-  config_dir="../exp/vldb/exp3-zipf-hp/config_${suffix}"
+  config_dir="../exp/vldb/exp3-zipf-topk/config_${suffix}"
   config_file="${config_dir}/${config_prefix}_${suffix}.toml"
 
   # 检查配置文件是否存在
