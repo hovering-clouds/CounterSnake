@@ -249,7 +249,7 @@ public:
    * @brief Get the size of the sketch
    *
    */
-  size_t size() const;
+  size_t size() const override;
 
   void clear();
 };
@@ -768,7 +768,7 @@ void SketchLearn<key_len, T, hash_t>::Sketch_Learning(){
 #ifdef TEST_DECODE_TIME
   MY_TOCK = std::chrono::steady_clock::now();
   MY_TIMER = std::chrono::duration_cast<std::chrono::microseconds>(MY_TOCK - MY_TICK);
-  printf("\nDECODE COST %ldms\n", static_cast<int64_t>(MY_TIMER.count()));
+  std::cout << "\nDECODE COST " << static_cast<int64_t>(MY_TIMER.count()) << " ms\n";
 #endif
 
     printf("LEARNING END!\n");

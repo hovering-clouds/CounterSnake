@@ -57,10 +57,10 @@ public:
                       FlowKey<key_len> &swap_key, T &swap_val);
 
   void lightpartInsert(const FlowKey<key_len> &flowkey, T val);
-  void update(const FlowKey<key_len> &flowkey, T val);
+  void update(const FlowKey<key_len> &flowkey, T val) override;
   T heavypartQuery(const FlowKey<key_len> &flowkey, bool &flag) const;
   T lightpartQuery(const FlowKey<key_len> &flowkey) const;
-  T query(const FlowKey<key_len> &flowkey) const;
+  T query(const FlowKey<key_len> &flowkey) const override;
   size_t size() const override;
   size_t cntNum() const override;
   void clear();

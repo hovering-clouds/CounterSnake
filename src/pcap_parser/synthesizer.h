@@ -12,6 +12,7 @@
 #include <common/data.h>
 #include <iostream>
 #include <random>
+#include <set>
 
 namespace OmniSketch::Util {
 

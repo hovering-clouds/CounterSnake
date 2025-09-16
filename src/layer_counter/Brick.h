@@ -483,7 +483,7 @@ public:
     for (size_t i = 0; i < cNum; i++){
       if(getOriCnt(i)!=getCnt(i)){
         num++;
-        err += std::abs(getOriCnt(i)!=getCnt(i));
+        err += std::abs(getOriCnt(i)-getCnt(i));
       }
     }
     std::cout << "#Inconsistency: " << num << ", which may due to clear_cnt" << std::endl;

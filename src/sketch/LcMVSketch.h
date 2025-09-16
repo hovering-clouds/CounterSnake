@@ -47,15 +47,15 @@ public:
   LcMVSketch &operator=(const LcMVSketch &) = delete;
   LcMVSketch &operator=(LcMVSketch &&) = delete;
 
-  void update(const FlowKey<key_len> &flow_key, T val);
-  T query(const FlowKey<key_len> &flow_key) const;
+  void update(const FlowKey<key_len> &flow_key, T val) override;
+  T query(const FlowKey<key_len> &flow_key) const override;
 
   void clear();
   size_t size() const override;
   size_t cntNum() const override;
 
   Bounds queryBounds(const FlowKey<key_len> &flow_key) const;
-  Data::Estimation<key_len, T>  getHeavyHitter(double threshold) const;
+  Data::Estimation<key_len, T>  getHeavyHitter(double threshold) const override;
 };
 
 } // namespace OmniSketch::Sketch
