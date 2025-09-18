@@ -1,0 +1,15 @@
+[CM]
+
+  [CM.para]
+    depth = 4
+    width = 1400
+
+  [CM.data]
+    cnt_method = "InPacket"
+    data = "../data/zipf-100.bin"
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+
+  [CM.test]
+    update = ["RATE"]
+    query = ["RATE", "ARE", "AAE"]
+
