@@ -19,6 +19,19 @@
     width_cnt = [6, 10, 16]
     dway = [0, 4, 1]
 
+  [Lc.dwaylr]
+    sketch = "CM"
+    sliding_sketch_num = 2
+    data_window_num = 8
+    data_prefix = "../data/data-100K-"
+    data_suffix = ".bin"
+    cnt_method = "InPacket"
+    chunk_size = 16
+    group_num = 64
+    format = [["flowkey", "padding", "timestamp", "length", "padding"], [13, 3, 8, 2, 6]]
+    width_cnt = [6, 6, 4, 4]
+    dway = [0, 10, 4, 2]
+
   [Lc.brick]
     #sketch = ["CM","FR","ES","PR","DT","HP","SL","MV"]
     sketch = ["CM"]
